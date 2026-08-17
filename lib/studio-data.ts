@@ -8,6 +8,7 @@
  * so Payload's role-based access is enforced server-side.
  */
 import { headers as nextHeaders } from "next/headers";
+import { getPublicApiBase, getServerApiBase } from "@/lib/api-base";
 
 export type StudioMediaOption = {
   id: string;
@@ -18,8 +19,7 @@ export type StudioMediaOption = {
 };
 
 function getApiBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return raw.replace(/\/$/, "");
+  return getServerApiBase();
 }
 
 async function apiGet<T>(path: string, cookieHeader?: string): Promise<T | null> {
@@ -46,7 +46,7 @@ function toMediaOption(doc: Record<string, unknown>): StudioMediaOption | null {
   if (typeof id !== "string" && typeof id !== "number") return null;
   const key = String(id);
   const filename = typeof doc.filename === "string" ? doc.filename : key;
-  const apiBase = getApiBase();
+  const apiBase = getPublicApiBase();
   return {
     id: key,
     url: `${apiBase}/api/media/file/${encodeURIComponent(filename)}`,

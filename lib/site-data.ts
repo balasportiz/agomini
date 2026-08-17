@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { getServerApiBase } from "@/lib/api-base";
 import {
   defaultFaqs,
   defaultFooterLinks,
@@ -209,10 +210,7 @@ function asNavLinks(value: unknown, fallback: PublicNavLink[]): PublicNavLink[] 
 // ---------------------------------------------------------------------------
 
 function getApiBase(): string {
-  // NEXT_PUBLIC_API_URL is set in Vercel env vars and points to the VPS.
-  // On the VPS itself this is not set, so it falls back to the same origin.
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return raw.replace(/\/$/, "");
+  return getServerApiBase();
 }
 
 type PayloadListResponse = { docs: Record<string, unknown>[]; totalDocs: number };

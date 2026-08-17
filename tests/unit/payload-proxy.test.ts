@@ -33,8 +33,8 @@ describe("rewriteSetCookieForProxy", () => {
 })
 
 describe("payloadCorsOrigins", () => {
-  it("allows the public site and the Render API origin", () => {
-    expect(payloadCorsOrigins("https://agomonirun.com", "https://agomoni-backend.onrender.com")).toEqual([
+  it("allows the public site, Render API, and extra origins", () => {
+    expect(payloadCorsOrigins("https://agomonirun.com", "https://agomoni-backend.onrender.com", "https://agomoni-backend.onrender.com")).toEqual([
       "https://agomonirun.com",
       "https://agomoni-backend.onrender.com",
     ])

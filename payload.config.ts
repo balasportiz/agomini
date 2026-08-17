@@ -38,8 +38,8 @@ export default buildConfig({
   editor: lexicalEditor(),
   secret: env.PAYLOAD_SECRET,
   serverURL: env.NEXT_PUBLIC_SITE_URL,
-  cors: payloadCorsOrigins(env.NEXT_PUBLIC_SITE_URL, env.NEXT_PUBLIC_API_URL),
-  csrf: payloadCorsOrigins(env.NEXT_PUBLIC_SITE_URL, env.NEXT_PUBLIC_API_URL),
+  cors: payloadCorsOrigins(env.NEXT_PUBLIC_SITE_URL, env.NEXT_PUBLIC_API_URL, process.env.RENDER_EXTERNAL_URL),
+  csrf: payloadCorsOrigins(env.NEXT_PUBLIC_SITE_URL, env.NEXT_PUBLIC_API_URL, process.env.RENDER_EXTERNAL_URL),
   db: postgresAdapter({
     pool: getPostgresPoolConfig(env.DATABASE_URL),
     migrationDir: path.resolve(dirname, "migrations"),

@@ -12,8 +12,8 @@ export function rewriteSetCookieForProxy(value: string): string {
   return value.replace(/;\s*domain=[^;]*/gi, "")
 }
 
-export function payloadCorsOrigins(siteUrl: string, apiUrl?: string): string[] {
-  return [...new Set([siteUrl.replace(/\/$/, ""), apiUrl?.replace(/\/$/, "")].filter((value): value is string => Boolean(value)))]
+export function payloadCorsOrigins(...origins: Array<string | undefined>): string[] {
+  return [...new Set(origins.map((value) => value?.replace(/\/$/, "")).filter((value): value is string => Boolean(value)))]
 }
 
 export async function proxyPayloadRequest(request: Request): Promise<Response> {

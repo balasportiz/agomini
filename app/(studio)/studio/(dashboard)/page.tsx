@@ -14,14 +14,14 @@ import {
   Users,
 } from "lucide-react";
 import { getStudioCapabilities, requireStudioUser } from "@/lib/studio-auth";
+import { getServerApiBase } from "@/lib/api-base";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 function getApiBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return raw.replace(/\/$/, "");
+  return getServerApiBase();
 }
 
 async function safeCount(collection: string, cookieHeader: string, where?: string): Promise<number> {

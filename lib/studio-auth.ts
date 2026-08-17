@@ -1,6 +1,7 @@
 import { headers as nextHeaders } from "next/headers";
 import { redirect } from "next/navigation";
 import { isEditorOrAbove, isMediaManagerOrAbove, isSuperAdmin } from "@/lib/roles";
+import { getServerApiBase } from "@/lib/api-base";
 
 /**
  * Minimal user shape returned by GET /api/users/me.
@@ -15,16 +16,32 @@ export type StudioUser = {
 };
 
 function getApiBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return raw.replace(/\/$/, "");
+  return getServerApiBase();
 }
 
 /**
- * Resolves the currently signed-in Studio user from the Payload auth cookie
- * via GET /api/users/me. Returns null when nobody is signed in.
+ * Resolves the currently signed-in Studio user.
+ * On Render, read the JWT locally via Payload (no HTTP self-fetch).
+ * On Vercel, call Render's GET /api/users/me with the forwarded cookie.
  */
 export async function getStudioUser(): Promise<StudioUser | null> {
   try {
+    if (!process.env.VERCEL) {
+      const { getPayload } = await import("payload");
+      const { default: config } = await import("@payload-config");
+      const payload = await getPayload({ config });
+      const h = await nextHeaders();
+      const { user } = await payload.auth({ headers: h });
+      if (!user || typeof user.id !== "string") return null;
+      const role = user.role === "admin" || user.role === "editor" || user.role === "media-manager" ? user.role : "editor";
+      return {
+        id: user.id,
+        email: typeof user.email === "string" ? user.email : "",
+        name: typeof user.name === "string" ? user.name : null,
+        role,
+      };
+    }
+
     const h = await nextHeaders();
     const cookieHeader = h.get("cookie") ?? "";
     const url = `${getApiBase()}/api/users/me`;
