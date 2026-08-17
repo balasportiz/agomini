@@ -50,6 +50,10 @@ function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+function studioPhotoSrc(id: string): string {
+  return `/api/photos/${encodeURIComponent(id)}/source`;
+}
+
 export function GalleriesManager({
   initialEditions,
   initialPhotos,
@@ -76,8 +80,14 @@ export function GalleriesManager({
 
   const selected = editions.find((edition) => edition.id === selectedId) ?? null;
   const selectedPhotos = useMemo(
-    () => photos.filter((photo) => photo.galleryEditionId === selectedId),
-    [photos, selectedId],
+    () =>
+      photos.filter((photo) => {
+        if (photo.galleryEditionId === selectedId) return true;
+        if (photo.galleryEditionId) return false;
+        if (photo.assetType === "partner") return false;
+        return editions.length === 1;
+      }),
+    [photos, selectedId, editions.length],
   );
   const hiddenSelectedCount = selectedPhotos.filter((photo) => !photo.active).length;
 
@@ -184,7 +194,7 @@ export function GalleriesManager({
 
     for (const [index, file] of selectedFiles.entries()) {
       try {
-        await uploadMedia(file, {
+        const uploaded = await uploadMedia(file, {
           altText: "",
           active: false,
           featured: false,
@@ -206,6 +216,32 @@ export function GalleriesManager({
             totalBytes,
           });
         });
+        try {
+          await updateDoc("media", uploaded.id, {
+            altText: "",
+            active: false,
+            featured: false,
+            assetType: "event-gallery",
+            showInGallery: true,
+            galleryEdition: selected.id,
+          });
+        } catch (error) {
+          console.error("[studio] could not attach uploaded photo to this edition", error);
+        }
+        const nextPhoto: StudioGalleryPhoto = {
+          id: uploaded.id,
+          url: studioPhotoSrc(uploaded.id),
+          altText: "",
+          filename: uploaded.filename,
+          active: false,
+          caption: "",
+          featured: false,
+          showInGallery: true,
+          galleryEditionId: selected.id,
+          assetType: "event-gallery",
+          updatedAt: new Date().toISOString(),
+        };
+        setPhotos((current) => [nextPhoto, ...current.filter((photo) => photo.id !== nextPhoto.id)]);
         imported += 1;
       } catch (error) {
         toast.error(`${file.name}: ${error instanceof Error ? error.message : "upload failed"}`);

@@ -27,6 +27,10 @@ type ImageOptions = {
  * 3. Local disk, no imgproxy (development):
  *    Falls back to /api/photos/[id]/source directly.
  */
+export function buildStudioImageUrl(photoId: string): string {
+  return `/api/photos/${encodeURIComponent(photoId)}/source`;
+}
+
 export function buildPublicImageUrl(photoId: string, options: ImageOptions = {}): string {
   const env = getFrontendEnv();
 

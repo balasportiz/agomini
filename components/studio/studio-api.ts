@@ -81,7 +81,7 @@ export function uploadMedia(
   file: File,
   data?: Record<string, unknown>,
   onProgress?: (progress: MediaUploadProgress) => void,
-): Promise<{ id: string }> {
+): Promise<{ id: string; filename: string }> {
   const form = new FormData();
   form.append("file", file);
   if (data) form.append("_payload", JSON.stringify(data));
@@ -103,8 +103,18 @@ export function uploadMedia(
         return;
       }
       try {
-        const result = JSON.parse(request.responseText);
-        resolve({ id: String(result?.doc?.id ?? result?.id ?? "") });
+        const result = JSON.parse(request.responseText) as {
+          doc?: { id?: unknown; filename?: unknown };
+          id?: unknown;
+        };
+        const id = String(result?.doc?.id ?? result?.id ?? "");
+        if (!id) {
+          reject(new Error(`The server saved ${file.name} without returning an id.`));
+          return;
+        }
+        const filename =
+          typeof result.doc?.filename === "string" ? result.doc.filename : file.name;
+        resolve({ id, filename });
       } catch {
         reject(new Error(`The server returned an invalid response for ${file.name}.`));
       }

@@ -8,7 +8,9 @@
  * so Payload's role-based access is enforced server-side.
  */
 import { headers as nextHeaders } from "next/headers";
-import { getPublicApiBase, getServerApiBase } from "@/lib/api-base";
+import { getServerApiBase } from "@/lib/api-base";
+import { buildStudioImageUrl } from "@/lib/image-url";
+import { payloadListQuery } from "@/lib/payload-query";
 
 export type StudioMediaOption = {
   id: string;
@@ -46,10 +48,9 @@ function toMediaOption(doc: Record<string, unknown>): StudioMediaOption | null {
   if (typeof id !== "string" && typeof id !== "number") return null;
   const key = String(id);
   const filename = typeof doc.filename === "string" ? doc.filename : key;
-  const apiBase = getPublicApiBase();
   return {
     id: key,
-    url: `${apiBase}/api/media/file/${encodeURIComponent(filename)}`,
+    url: buildStudioImageUrl(key),
     altText: typeof doc.altText === "string" ? doc.altText : "",
     filename,
     active: doc.active !== false,
@@ -63,6 +64,51 @@ function relationshipId(value: unknown): string | null {
     if (typeof id === "string" || typeof id === "number") return String(id);
   }
   return null;
+}
+
+async function findGalleryMediaDocs(): Promise<Record<string, unknown>[]> {
+  if (!process.env.VERCEL) {
+    try {
+      const { getPayload } = await import("payload");
+      const { default: config } = await import("@payload-config");
+      const payload = await getPayload({ config });
+      const requestHeaders = await nextHeaders();
+      const { user } = await payload.auth({ headers: requestHeaders });
+      if (!user) throw new Error("Studio session missing for media find");
+      const result = await payload.find({
+        collection: "media",
+        depth: 0,
+        limit: 1000,
+        sort: "-createdAt",
+        overrideAccess: false,
+        user,
+      });
+      return result.docs as unknown as Record<string, unknown>[];
+    } catch (error) {
+      console.error("[studio-data] in-process media find failed, falling back to REST", error);
+    }
+  }
+
+  const cookie = await getCookieHeader();
+  const result = await apiGet<{ docs: Record<string, unknown>[] }>(
+    `/api/media?${payloadListQuery({ sort: "-createdAt", limit: 1000, depth: 0 })}`,
+    cookie,
+  );
+  return result?.docs ?? [];
+}
+
+function toGalleryPhoto(doc: Record<string, unknown>): StudioGalleryPhoto | null {
+  const base = toMediaOption(doc);
+  if (!base) return null;
+  return {
+    ...base,
+    caption: typeof doc.caption === "string" ? doc.caption : "",
+    featured: doc.featured === true,
+    showInGallery: doc.showInGallery === true,
+    galleryEditionId: relationshipId(doc.galleryEdition),
+    assetType: typeof doc.assetType === "string" ? doc.assetType : "site",
+    updatedAt: typeof doc.updatedAt === "string" ? doc.updatedAt : "",
+  };
 }
 
 /** Media items available to pick as hero/story/highlight/partner images. */
@@ -174,6 +220,7 @@ export type StudioGalleryPhoto = StudioMediaOption & {
   featured: boolean;
   showInGallery: boolean;
   galleryEditionId: string | null;
+  assetType: string;
   updatedAt: string;
 };
 
@@ -199,25 +246,8 @@ export async function loadEventEditions(): Promise<StudioEdition[]> {
 
 /** Event-gallery assets only; site/story images and partner logos stay outside this workspace. */
 export async function loadGalleryMedia(): Promise<StudioGalleryPhoto[]> {
-  const cookie = await getCookieHeader();
-  const result = await apiGet<{ docs: Record<string, unknown>[] }>(
-    "/api/media?where[assetType][equals]=event-gallery&sort=_order&limit=1000",
-    cookie,
-  );
-  return (result?.docs ?? [])
-    .map((doc) => {
-      const base = toMediaOption(doc);
-      if (!base) return null;
-      return {
-        ...base,
-        caption: typeof doc.caption === "string" ? doc.caption : "",
-        featured: doc.featured === true,
-        showInGallery: doc.showInGallery === true,
-        galleryEditionId: relationshipId(doc.galleryEdition),
-        updatedAt: typeof doc.updatedAt === "string" ? doc.updatedAt : "",
-      };
-    })
-    .filter((photo): photo is StudioGalleryPhoto => photo !== null);
+  const docs = await findGalleryMediaDocs();
+  return docs.map(toGalleryPhoto).filter((photo): photo is StudioGalleryPhoto => photo !== null);
 }
 
 /** Edition explicitly selected for the homepage gallery preview. */

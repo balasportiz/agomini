@@ -33,7 +33,10 @@ export async function GET(
       const upstreamUrl = `${base}/api/photos/${encodeURIComponent(id)}/source`;
       const upstream = await fetch(upstreamUrl, {
         redirect: "manual", // forward redirects as-is to the browser
-        headers: { "if-none-match": request.headers.get("if-none-match") ?? "" },
+        headers: {
+          "if-none-match": request.headers.get("if-none-match") ?? "",
+          cookie: request.headers.get("cookie") ?? "",
+        },
       });
       if (upstream.status === 302 || upstream.status === 301) {
         // R2 redirect: pass it straight to the browser
@@ -65,15 +68,17 @@ export async function GET(
     const { isR2Active, r2PublicUrl } = await import("@/lib/storage");
 
     const payload = await getPayload({ config });
-    const document = await payload.findByID({ collection: "media", id, overrideAccess: false });
+    const { user } = await payload.auth({ headers: request.headers });
+    const document = await payload.findByID({
+      collection: "media",
+      id,
+      overrideAccess: false,
+      user: user ?? undefined,
+    });
     const photo = document as unknown as Record<string, unknown>;
 
-    if (
-      photo.active === false ||
-      typeof photo.filename !== "string" ||
-      typeof photo.mimeType !== "string"
-    )
-      return notFound();
+    if (typeof photo.filename !== "string" || typeof photo.mimeType !== "string") return notFound();
+    if (!user && photo.active === false) return notFound();
 
     const filename = photo.filename;
 
