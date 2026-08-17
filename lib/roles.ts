@@ -1,5 +1,3 @@
-import type { User } from "@/payload-types";
-
 /**
  * Role tiers, ordered from least to most privileged.
  *
@@ -41,5 +39,3 @@ export function hasMinimumRole(user: unknown, minimum: Role): boolean {
 export const isSuperAdmin = (user: unknown): boolean => roleOf(user) === "admin";
 export const isEditorOrAbove = (user: unknown): boolean => hasMinimumRole(user, "editor");
 export const isMediaManagerOrAbove = (user: unknown): boolean => hasMinimumRole(user, "media-manager");
-
-export type { User };

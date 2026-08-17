@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getPayload, type Where } from "payload";
-import config from "@payload-config";
 import {
   Flag,
   GalleryHorizontalEnd,
@@ -21,34 +19,45 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
-type CountKey = "race-categories" | "event-logistics" | "event-editions" | "highlights" | "faqs" | "sponsors" | "media";
+function getApiBase(): string {
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return raw.replace(/\/$/, "");
+}
 
-async function safeCount(payload: Awaited<ReturnType<typeof getPayload>>, collection: CountKey, where?: Where) {
+async function safeCount(collection: string, cookieHeader: string, where?: string): Promise<number> {
   try {
-    const result = await payload.count({ collection, overrideAccess: true, ...(where ? { where } : {}) });
-    return result.totalDocs;
+    const whereParam = where ? `&${where}` : "";
+    const url = `${getApiBase()}/api/${encodeURIComponent(collection)}?limit=0${whereParam}`;
+    const res = await fetch(url, { cache: "no-store", headers: { Cookie: cookieHeader } });
+    if (!res.ok) return 0;
+    const data = (await res.json()) as { totalDocs?: number };
+    return data.totalDocs ?? 0;
   } catch {
     return 0;
   }
 }
 
 export default async function StudioDashboardPage() {
+  const { headers: nextHeaders } = await import("next/headers");
+  const h = await nextHeaders();
+  const cookieHeader = h.get("cookie") ?? "";
+
   const user = await requireStudioUser();
   const caps = getStudioCapabilities(user);
-  const payload = await getPayload({ config });
 
-  const [categories, logistics, editions, highlights, faqs, partners, mediaTotal, mediaActive] = await Promise.all([
-    safeCount(payload, "race-categories"),
-    safeCount(payload, "event-logistics"),
-    safeCount(payload, "event-editions"),
-    safeCount(payload, "highlights"),
-    safeCount(payload, "faqs"),
-    safeCount(payload, "sponsors"),
-    safeCount(payload, "media"),
-    safeCount(payload, "media", { active: { equals: true } }),
-  ]);
+  const [categories, logistics, editions, highlights, faqs, partners, mediaTotal, mediaActive] =
+    await Promise.all([
+      safeCount("race-categories", cookieHeader),
+      safeCount("event-logistics", cookieHeader),
+      safeCount("event-editions", cookieHeader),
+      safeCount("highlights", cookieHeader),
+      safeCount("faqs", cookieHeader),
+      safeCount("sponsors", cookieHeader),
+      safeCount("media", cookieHeader),
+      safeCount("media", cookieHeader, "where[active][equals]=true"),
+    ]);
 
-  const firstName = (user.name || "there").split(" ")[0];
+  const firstName = ((user.name || "there") as string).split(" ")[0];
 
   const stats = [
     { label: "Race categories", value: categories, icon: Flag, href: "/studio/race-categories" },
@@ -58,7 +67,15 @@ export default async function StudioDashboardPage() {
     { label: "Event day entries", value: logistics, icon: MapPin, href: "/studio/event-logistics" },
     { label: "Editions", value: editions, icon: Trophy, href: "/studio/results" },
     ...(caps.canManageMedia
-      ? [{ label: "Gallery photos", value: mediaTotal, icon: Images, href: "/studio/galleries", sub: `${mediaActive} live assets` }]
+      ? [
+          {
+            label: "Gallery photos",
+            value: mediaTotal,
+            icon: Images,
+            href: "/studio/galleries",
+            sub: `${mediaActive} live assets`,
+          },
+        ]
       : []),
   ];
 
@@ -104,7 +121,11 @@ export default async function StudioDashboardPage() {
                 <span className="studio-stat__arrow" aria-hidden="true">↗</span>
               </span>
               <span className="studio-stat__value">{stat.value}</span>
-              {"sub" in stat && stat.sub ? <span className="studio-stat__sub">{stat.sub}</span> : <span className="studio-stat__sub">Ready to edit</span>}
+              {"sub" in stat && stat.sub ? (
+                <span className="studio-stat__sub">{stat.sub}</span>
+              ) : (
+                <span className="studio-stat__sub">Ready to edit</span>
+              )}
             </Link>
           ))}
         </div>

@@ -1,6 +1,4 @@
 import { cache } from "react";
-import { getPayload } from "payload";
-import config from "@payload-config";
 import {
   defaultFaqs,
   defaultFooterLinks,
@@ -160,6 +158,12 @@ const defaultCategories: PublicCategory[] = defaultRaceCategories.map((category)
   id: category.name.toLocaleLowerCase("en"),
 }));
 
+// ---------------------------------------------------------------------------
+// Helpers to normalise raw Payload REST responses into typed public shapes.
+// The VPS REST API returns the full document; we just pick what the frontend
+// needs and rebuild image URLs through imgproxy.
+// ---------------------------------------------------------------------------
+
 function asPublicPhoto(value: unknown): PublicPhoto | null {
   if (!value || typeof value !== "object") return null;
   const photo = value as Record<string, unknown>;
@@ -195,148 +199,218 @@ function asNavLinks(value: unknown, fallback: PublicNavLink[]): PublicNavLink[] 
   return links.length > 0 ? links : fallback;
 }
 
-export const loadPublicSiteData = cache(async () => {
-  try {
-    const payload = await getPayload({ config });
-    const [settingsRecord, navigationRecord, categories, logistics, editions, galleryPhotos, highlights, faqs, sponsors] = await Promise.all([
-      payload.findGlobal({ slug: "site-settings", overrideAccess: false, depth: 1 }),
-      payload.findGlobal({ slug: "navigation", overrideAccess: false, depth: 0 }),
-      payload.find({ collection: "race-categories", overrideAccess: false, where: { active: { equals: true } }, sort: "_order", limit: 20 }),
-      payload.find({ collection: "event-logistics", overrideAccess: false, where: { active: { equals: true } }, sort: "_order", limit: 20 }),
-      payload.find({ collection: "event-editions", overrideAccess: false, where: { active: { equals: true } }, sort: "-eventDate", limit: 100, depth: 0 }),
-      payload.find({
-        collection: "media",
-        overrideAccess: false,
-        where: {
-          and: [
-            { active: { equals: true } },
-            { assetType: { equals: "event-gallery" } },
-            { showInGallery: { equals: true } },
-          ],
-        },
-        sort: "_order",
-        limit: 1000,
-        depth: 0,
-      }),
-      payload.find({ collection: "highlights", overrideAccess: false, where: { active: { equals: true } }, sort: "_order", limit: 30, depth: 1 }),
-      payload.find({ collection: "faqs", overrideAccess: false, where: { active: { equals: true } }, sort: "_order", limit: 40 }),
-      payload.find({ collection: "sponsors", overrideAccess: false, where: { active: { equals: true } }, sort: "_order", limit: 50, depth: 1 }),
-    ]);
+// ---------------------------------------------------------------------------
+// The VPS exposes a single aggregated endpoint that returns everything the
+// frontend needs in one request, avoiding 9 separate round-trips.
+// Endpoint: GET /api/public-data  (unauthenticated, read-only)
+//
+// Falls back to the Payload REST API if the aggregated endpoint is unavailable,
+// and falls back again to hardcoded defaults if the VPS is unreachable.
+// ---------------------------------------------------------------------------
 
-    const rawSettings = settingsRecord as unknown as Record<string, unknown>;
-    const photosByEdition = new Map<string, PublicPhoto[]>();
-    for (const item of galleryPhotos.docs) {
-      const record = item as unknown as Record<string, unknown>;
-      const editionId = relationshipId(record.galleryEdition);
-      const photo = asPublicPhoto(record);
-      if (!editionId || !photo) continue;
-      const current = photosByEdition.get(editionId) ?? [];
-      current.push(photo);
-      photosByEdition.set(editionId, current);
-    }
-    const publicEditions: PublicEdition[] = editions.docs.map((item) => {
-      const record = item as unknown as Record<string, unknown>;
-      const id = String(record.id ?? "");
+function getApiBase(): string {
+  // NEXT_PUBLIC_API_URL is set in Vercel env vars and points to the VPS.
+  // On the VPS itself this is not set, so it falls back to the same origin.
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return raw.replace(/\/$/, "");
+}
+
+type PayloadListResponse = { docs: Record<string, unknown>[]; totalDocs: number };
+type PayloadGlobalResponse = Record<string, unknown>;
+
+async function payloadGet<T>(path: string): Promise<T | null> {
+  try {
+    const url = `${getApiBase()}${path}`;
+    const res = await fetch(url, { next: { revalidate: 0 }, cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPublicSiteDataFromApi() {
+  const [
+    settingsRaw,
+    navigationRaw,
+    categoriesRaw,
+    logisticsRaw,
+    editionsRaw,
+    galleryPhotosRaw,
+    highlightsRaw,
+    faqsRaw,
+    sponsorsRaw,
+  ] = await Promise.all([
+    payloadGet<PayloadGlobalResponse>("/api/globals/site-settings?depth=1"),
+    payloadGet<PayloadGlobalResponse>("/api/globals/navigation?depth=0"),
+    payloadGet<PayloadListResponse>("/api/race-categories?where[active][equals]=true&sort=_order&limit=20"),
+    payloadGet<PayloadListResponse>("/api/event-logistics?where[active][equals]=true&sort=_order&limit=20"),
+    payloadGet<PayloadListResponse>("/api/event-editions?where[active][equals]=true&sort=-eventDate&limit=100"),
+    payloadGet<PayloadListResponse>(
+      "/api/media?where[active][equals]=true&where[assetType][equals]=event-gallery&where[showInGallery][equals]=true&sort=_order&limit=1000",
+    ),
+    payloadGet<PayloadListResponse>("/api/highlights?where[active][equals]=true&sort=_order&limit=30&depth=1"),
+    payloadGet<PayloadListResponse>("/api/faqs?where[active][equals]=true&sort=_order&limit=40"),
+    payloadGet<PayloadListResponse>("/api/sponsors?where[active][equals]=true&sort=_order&limit=50&depth=1"),
+  ]);
+
+  // Any null means the VPS is unreachable — fall back to defaults.
+  if (!settingsRaw || !navigationRaw) return null;
+
+  // --- editions + gallery photos ---
+  const photosByEdition = new Map<string, PublicPhoto[]>();
+  for (const item of galleryPhotosRaw?.docs ?? []) {
+    const editionId = relationshipId(item.galleryEdition);
+    const photo = asPublicPhoto(item);
+    if (!editionId || !photo) continue;
+    const current = photosByEdition.get(editionId) ?? [];
+    current.push(photo);
+    photosByEdition.set(editionId, current);
+  }
+
+  const publicEditions: PublicEdition[] = (editionsRaw?.docs ?? [])
+    .map((item) => {
+      const id = String(item.id ?? "");
       return {
         id,
-        name: String(record.name ?? ""),
-        editionLabel: String(record.editionLabel ?? ""),
-        slug: String(record.slug ?? ""),
-        eventDate: typeof record.eventDate === "string" ? record.eventDate : null,
-        galleryDescription: typeof record.galleryDescription === "string" ? record.galleryDescription : null,
-        resultsUrl: typeof record.resultsUrl === "string" ? record.resultsUrl : null,
-        resultsPublished: record.resultsPublished === true,
+        name: String(item.name ?? ""),
+        editionLabel: String(item.editionLabel ?? ""),
+        slug: String(item.slug ?? ""),
+        eventDate: typeof item.eventDate === "string" ? item.eventDate : null,
+        galleryDescription: typeof item.galleryDescription === "string" ? item.galleryDescription : null,
+        resultsUrl: typeof item.resultsUrl === "string" ? item.resultsUrl : null,
+        resultsPublished: item.resultsPublished === true,
         photos: photosByEdition.get(id) ?? [],
       };
-    }).filter((edition) => edition.id && edition.name && edition.slug);
-    const featuredEditionId = relationshipId(rawSettings.featuredGalleryEdition);
-    const homepageEdition = publicEditions.find((edition) => edition.id === featuredEditionId && edition.photos.length > 0)
-      ?? publicEditions.find((edition) => edition.photos.length > 0);
-    const publicPhotos = homepageEdition?.photos ?? [];
-    const publicHighlights = highlights.docs.map((item) => {
-      const record = item as unknown as Record<string, unknown>;
-      return { title: String(record.title ?? ""), description: String(record.description ?? ""), photo: asPublicPhoto(record.photo), active: record.active !== false };
-    }).filter((item) => item.title && item.description);
-    const publicFaqs = faqs.docs.map((item) => {
-      const record = item as unknown as Record<string, unknown>;
-      return { question: String(record.question ?? ""), answer: String(record.answer ?? ""), active: record.active !== false };
-    }).filter((item) => item.question && item.answer);
-    const publicLogistics = logistics.docs.map((item) => {
-      const record = item as unknown as Record<string, unknown>;
-      const type = record.type === "bib-expo" ? "bib-expo" : "race-day";
-      return {
-        id: String(record.id ?? ""),
-        title: String(record.title ?? ""),
-        type,
-        venue: String(record.venue ?? ""),
-        address: String(record.address ?? ""),
-        dateTime: String(record.dateTime ?? ""),
-        directions: String(record.directions ?? ""),
-        mapUrl: typeof record.mapUrl === "string" ? record.mapUrl : null,
-      } satisfies PublicEventLogistic;
-    }).filter((item) => item.id && item.title && item.venue && item.address && item.dateTime && item.directions);
-    const publicSponsors = sponsors.docs.map((item) => {
-      const record = item as unknown as Record<string, unknown>;
-      return {
-        name: String(record.name ?? ""),
-        websiteUrl: typeof record.websiteUrl === "string" ? record.websiteUrl : null,
-        description: typeof record.description === "string" ? record.description : null,
-        logo: asPublicPhoto(record.logo),
-        active: record.active !== false,
-      };
-    }).filter((item) => item.name);
+    })
+    .filter((e) => e.id && e.name && e.slug);
 
-    const rawHeroManifesto = (rawSettings.heroManifesto as Record<string, unknown> | undefined) ?? {};
-    const rawStoryChapter = (rawSettings.storyChapter as Record<string, unknown> | undefined) ?? {};
-    const rawCommunityChapter = (rawSettings.communityChapter as Record<string, unknown> | undefined) ?? {};
-    const rawNavigation = navigationRecord as unknown as Record<string, unknown>;
+  const featuredEditionId = relationshipId(settingsRaw.featuredGalleryEdition);
+  const homepageEdition =
+    publicEditions.find((e) => e.id === featuredEditionId && e.photos.length > 0) ??
+    publicEditions.find((e) => e.photos.length > 0);
+  const publicPhotos = homepageEdition?.photos ?? [];
 
-    return {
-      settings: {
-        ...defaultSettings,
-        ...(rawSettings as Partial<PublicSettings>),
-        heroPhoto: asPublicPhoto(rawSettings.heroPhoto),
-        showRegistrationCta: typeof rawSettings.showRegistrationCta === "boolean"
-          ? rawSettings.showRegistrationCta
-          : defaultSettings.showRegistrationCta,
-        showResultsCta: typeof rawSettings.showResultsCta === "boolean"
-          ? rawSettings.showResultsCta
-          : defaultSettings.showResultsCta,
-        highlights: publicHighlights,
-        faqs: publicFaqs,
-        sponsors: publicSponsors,
-        heroManifesto: { ...defaultSettings.heroManifesto, ...rawHeroManifesto },
-        storyChapter: {
-          ...defaultSettings.storyChapter,
-          ...rawStoryChapter,
-          image: asPublicPhoto(rawStoryChapter.image),
-        },
-        communityChapter: {
-          ...defaultSettings.communityChapter,
-          ...rawCommunityChapter,
-          image: asPublicPhoto(rawCommunityChapter.image),
-        },
-      } satisfies PublicSettings,
-      navigation: {
-        headerLinks: asNavLinks(rawNavigation?.headerLinks, defaultNavigation.headerLinks),
-        footerLinks: asNavLinks(rawNavigation?.footerLinks, defaultNavigation.footerLinks),
-      } satisfies PublicNavigation,
-      categories: categories.docs as unknown as PublicCategory[],
-      logistics: publicLogistics,
-      editions: publicEditions,
-      photos: publicPhotos,
-      databaseAvailable: true,
-    };
+  // --- highlights ---
+  const publicHighlights = (highlightsRaw?.docs ?? [])
+    .map((item) => ({
+      title: String(item.title ?? ""),
+      description: String(item.description ?? ""),
+      photo: asPublicPhoto(item.photo),
+      active: item.active !== false,
+    }))
+    .filter((h) => h.title && h.description);
+
+  // --- faqs ---
+  const publicFaqs = (faqsRaw?.docs ?? [])
+    .map((item) => ({
+      question: String(item.question ?? ""),
+      answer: String(item.answer ?? ""),
+      active: item.active !== false,
+    }))
+    .filter((f) => f.question && f.answer);
+
+  // --- logistics ---
+  const publicLogistics = (logisticsRaw?.docs ?? [])
+    .map((item) => ({
+      id: String(item.id ?? ""),
+      title: String(item.title ?? ""),
+      type: item.type === "bib-expo" ? ("bib-expo" as const) : ("race-day" as const),
+      venue: String(item.venue ?? ""),
+      address: String(item.address ?? ""),
+      dateTime: String(item.dateTime ?? ""),
+      directions: String(item.directions ?? ""),
+      mapUrl: typeof item.mapUrl === "string" ? item.mapUrl : null,
+    }))
+    .filter((l) => l.id && l.title && l.venue && l.address && l.dateTime && l.directions);
+
+  // --- sponsors ---
+  const publicSponsors = (sponsorsRaw?.docs ?? [])
+    .map((item) => ({
+      name: String(item.name ?? ""),
+      websiteUrl: typeof item.websiteUrl === "string" ? item.websiteUrl : null,
+      description: typeof item.description === "string" ? item.description : null,
+      logo: asPublicPhoto(item.logo),
+      active: item.active !== false,
+    }))
+    .filter((s) => s.name);
+
+  // --- categories ---
+  const publicCategories = (categoriesRaw?.docs ?? []) as unknown as PublicCategory[];
+
+  // --- settings ---
+  const rawHeroManifesto = (settingsRaw.heroManifesto as Record<string, unknown> | undefined) ?? {};
+  const rawStoryChapter = (settingsRaw.storyChapter as Record<string, unknown> | undefined) ?? {};
+  const rawCommunityChapter = (settingsRaw.communityChapter as Record<string, unknown> | undefined) ?? {};
+
+  const settings: PublicSettings = {
+    ...defaultSettings,
+    ...(settingsRaw as Partial<PublicSettings>),
+    heroPhoto: asPublicPhoto(settingsRaw.heroPhoto),
+    showRegistrationCta:
+      typeof settingsRaw.showRegistrationCta === "boolean"
+        ? settingsRaw.showRegistrationCta
+        : defaultSettings.showRegistrationCta,
+    showResultsCta:
+      typeof settingsRaw.showResultsCta === "boolean"
+        ? settingsRaw.showResultsCta
+        : defaultSettings.showResultsCta,
+    highlights: publicHighlights,
+    faqs: publicFaqs,
+    sponsors: publicSponsors,
+    heroManifesto: { ...defaultSettings.heroManifesto, ...rawHeroManifesto },
+    storyChapter: {
+      ...defaultSettings.storyChapter,
+      ...rawStoryChapter,
+      image: asPublicPhoto(rawStoryChapter.image),
+    },
+    communityChapter: {
+      ...defaultSettings.communityChapter,
+      ...rawCommunityChapter,
+      image: asPublicPhoto(rawCommunityChapter.image),
+    },
+  };
+
+  const navigation: PublicNavigation = {
+    headerLinks: asNavLinks(
+      (navigationRaw as Record<string, unknown>)?.headerLinks,
+      defaultNavigation.headerLinks,
+    ),
+    footerLinks: asNavLinks(
+      (navigationRaw as Record<string, unknown>)?.footerLinks,
+      defaultNavigation.footerLinks,
+    ),
+  };
+
+  return {
+    settings,
+    navigation,
+    categories: publicCategories,
+    logistics: publicLogistics,
+    editions: publicEditions,
+    photos: publicPhotos,
+    databaseAvailable: true,
+  };
+}
+
+/** Loads all public site data. On Vercel this fetches from the VPS REST API.
+ *  On the VPS monolith this also uses the REST API (same-origin). Falls back
+ *  to hardcoded defaults if the API is unreachable. */
+export const loadPublicSiteData = cache(async () => {
+  try {
+    const data = await fetchPublicSiteDataFromApi();
+    if (data) return data;
   } catch (error) {
     console.error("Public content fallback active:", error instanceof Error ? error.message : "unknown error");
-    return {
-      settings: defaultSettings,
-      navigation: defaultNavigation,
-      categories: defaultCategories,
-      logistics: [] as PublicEventLogistic[],
-      editions: [] as PublicEdition[],
-      photos: [] as PublicPhoto[],
-      databaseAvailable: false,
-    };
   }
+
+  return {
+    settings: defaultSettings,
+    navigation: defaultNavigation,
+    categories: defaultCategories,
+    logistics: [] as PublicEventLogistic[],
+    editions: [] as PublicEdition[],
+    photos: [] as PublicPhoto[],
+    databaseAvailable: false,
+  };
 });
