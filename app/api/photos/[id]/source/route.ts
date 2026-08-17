@@ -1,9 +1,14 @@
 /**
  * /api/photos/[id]/source
  *
- * On the VPS: streams the raw photo file from local disk.
- * On Vercel: proxies to the VPS (imgproxy uses this as its source URL;
- * Vercel-deployed pages never call this route directly).
+ * Resolves a media record ID to its raw photo file.
+ *
+ * Storage modes:
+ *  - R2 active:     302 redirect to the R2 public URL (browser/imgproxy fetches from CF edge)
+ *  - Local disk:    streams the file from STORAGE_ROOT
+ *
+ * On Vercel: proxies the redirect/stream to the VPS (same semantics, just
+ * one extra hop — imgproxy on the VPS follows the redirect transparently).
  */
 export const dynamic = "force-dynamic";
 
@@ -20,14 +25,23 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  // ── Vercel: proxy to VPS ────────────────────────────────────────────────
   if (process.env.VERCEL) {
     const base = getApiBase();
     if (!base) return notFound();
     try {
-      const url = `${base}/api/photos/${encodeURIComponent(id)}/source`;
-      const upstream = await fetch(url, {
+      const upstreamUrl = `${base}/api/photos/${encodeURIComponent(id)}/source`;
+      const upstream = await fetch(upstreamUrl, {
+        redirect: "manual", // forward redirects as-is to the browser
         headers: { "if-none-match": request.headers.get("if-none-match") ?? "" },
       });
+      if (upstream.status === 302 || upstream.status === 301) {
+        // R2 redirect: pass it straight to the browser
+        return new Response(null, {
+          status: 302,
+          headers: { Location: upstream.headers.get("Location") ?? upstreamUrl },
+        });
+      }
       if (!upstream.ok) return notFound();
       return new Response(upstream.body, {
         status: upstream.status,
@@ -43,19 +57,17 @@ export async function GET(
     }
   }
 
-  // VPS monolith path — dynamically import filesystem and Payload modules.
+  // ── VPS monolith ─────────────────────────────────────────────────────────
   try {
-    const { createReadStream } = await import("node:fs");
-    const { stat } = await import("node:fs/promises");
-    const { Readable } = await import("node:stream");
     const { getPayload } = await import("payload");
     const { default: config } = await import("@payload-config");
     const { getServerEnv } = await import("@/lib/env");
-    const { resolveStoredFile } = await import("@/lib/storage");
+    const { isR2Active, r2PublicUrl } = await import("@/lib/storage");
 
     const payload = await getPayload({ config });
     const document = await payload.findByID({ collection: "media", id, overrideAccess: false });
     const photo = document as unknown as Record<string, unknown>;
+
     if (
       photo.active === false ||
       typeof photo.filename !== "string" ||
@@ -63,18 +75,35 @@ export async function GET(
     )
       return notFound();
 
-    const filePath = resolveStoredFile(getServerEnv().STORAGE_ROOT, photo.filename);
-    const fileStats = await stat(filePath);
-    const etag = `"${id}-${String(photo.updatedAt ?? fileStats.mtimeMs)}-${fileStats.size}"`;
+    const filename = photo.filename;
+
+    // ── R2 mode: 302 redirect to public R2 URL ──────────────────────────
+    if (isR2Active()) {
+      const publicUrl = r2PublicUrl(filename);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: publicUrl,
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+
+    // ── Local disk mode: stream the file ───────────────────────────────
+    const { streamFile } = await import("@/lib/storage");
+    const env = getServerEnv();
+    const { stream, size } = await streamFile(filename, env.STORAGE_ROOT);
+
+    const updatedAt = String(photo.updatedAt ?? "");
+    const etag = `"${id}-${updatedAt}-${size}"`;
     if (request.headers.get("if-none-match") === etag)
       return new Response(null, { status: 304, headers: { ETag: etag } });
 
-    const body = Readable.toWeb(createReadStream(filePath)) as ReadableStream;
-    return new Response(body, {
+    return new Response(stream, {
       headers: {
         "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
-        "Content-Length": String(fileStats.size),
-        "Content-Type": photo.mimeType,
+        "Content-Length": String(size),
+        "Content-Type": photo.mimeType as string,
         ETag: etag,
         "X-Content-Type-Options": "nosniff",
       },

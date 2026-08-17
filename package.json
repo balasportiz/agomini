@@ -20,6 +20,7 @@
     "migrate:create": "payload migrate:create"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.826.0",
     "@googleapis/drive": "20.2.0",
     "@hookform/resolvers": "^3.10.0",
     "@payloadcms/db-postgres": "3.86.0",

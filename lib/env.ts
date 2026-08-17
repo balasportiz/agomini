@@ -40,10 +40,24 @@ const backendEnvSchema = frontendEnvSchema.extend({
   IMGPROXY_SALT: z.string().default(""),
   GOOGLE_DRIVE_API_KEY: z.string().default(""),
   GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: z.string().default(""),
+  // Cloudflare R2 (S3-compatible). All four must be set to enable R2 storage.
+  // Leave S3_BUCKET empty to keep using local disk (default for Docker/VPS).
+  S3_ENDPOINT: z.string().url().optional(),
+  S3_BUCKET: z.string().default(""),
+  S3_ACCESS_KEY_ID: z.string().default(""),
+  S3_SECRET_ACCESS_KEY: z.string().default(""),
+  // Public base URL for R2 objects, e.g. https://pub-xxxx.r2.dev
+  // or a custom domain you've configured in Cloudflare.
+  S3_PUBLIC_URL: z.string().url().optional(),
 }).superRefine((env, context) => {
   if (env.NODE_ENV !== "production") return;
-  if (!env.IMGPROXY_KEY) context.addIssue({ code: z.ZodIssueCode.custom, path: ["IMGPROXY_KEY"], message: "IMGPROXY_KEY is required in production" });
-  if (!env.IMGPROXY_SALT) context.addIssue({ code: z.ZodIssueCode.custom, path: ["IMGPROXY_SALT"], message: "IMGPROXY_SALT is required in production" });
+  const r2Active = Boolean(env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.S3_PUBLIC_URL);
+  // When R2 is the storage backend, imgproxy signing is optional because
+  // images are served directly from the R2 public URL.
+  if (!r2Active) {
+    if (!env.IMGPROXY_KEY) context.addIssue({ code: z.ZodIssueCode.custom, path: ["IMGPROXY_KEY"], message: "IMGPROXY_KEY is required in production when not using R2 storage" });
+    if (!env.IMGPROXY_SALT) context.addIssue({ code: z.ZodIssueCode.custom, path: ["IMGPROXY_SALT"], message: "IMGPROXY_SALT is required in production when not using R2 storage" });
+  }
 });
 
 export type ServerEnv = z.infer<typeof backendEnvSchema>;

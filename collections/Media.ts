@@ -14,8 +14,11 @@ import {
 import {
   assertStorageCapacity,
   createStoredFilename,
+  deleteFile,
   ensureStorageLayout,
   getStorageLayout,
+  isR2Active,
+  r2PutObject,
   validateUploadCandidate,
   type UploadCandidate,
 } from "@/lib/storage";
@@ -60,7 +63,8 @@ export const Media: CollectionConfig = {
     group: "Gallery",
     useAsTitle: "filename",
     defaultColumns: ["filename", "altText", "active", "featured", "updatedAt"],
-    description: "Upload photos inactive first, then publish only images approved for the public gallery. Accessibility descriptions and visible captions are optional.",
+    description:
+      "Upload photos inactive first, then publish only images approved for the public gallery. Accessibility descriptions and visible captions are optional.",
     ...adminPreview("/gallery"),
   },
   access: {
@@ -77,7 +81,10 @@ export const Media: CollectionConfig = {
       method: "get",
       handler: async (req) => {
         if (!isMediaManagerOrAbove(req.user)) {
-          return Response.json({ error: "Forbidden" }, { status: 403, headers: headersWithCors({ headers: new Headers(), req }) });
+          return Response.json(
+            { error: "Forbidden" },
+            { status: 403, headers: headersWithCors({ headers: new Headers(), req }) },
+          );
         }
         return Response.json(
           { modes: getAvailableDriveImportModes() },
@@ -99,10 +106,16 @@ export const Media: CollectionConfig = {
         const mode = body?.mode;
         const editionId = body?.editionId?.trim();
         if (!link || !editionId || (mode !== "api-key" && mode !== "service-account")) {
-          return Response.json({ error: "A Drive link, import mode and event edition are required." }, { status: 400, headers: corsHeaders });
+          return Response.json(
+            { error: "A Drive link, import mode and event edition are required." },
+            { status: 400, headers: corsHeaders },
+          );
         }
         if (!getAvailableDriveImportModes().includes(mode)) {
-          return Response.json({ error: `The "${mode}" Drive import method is not configured on this server.` }, { status: 400, headers: corsHeaders });
+          return Response.json(
+            { error: `The "${mode}" Drive import method is not configured on this server.` },
+            { status: 400, headers: corsHeaders },
+          );
         }
 
         let candidates;
@@ -115,15 +128,15 @@ export const Media: CollectionConfig = {
           );
         }
         if (candidates.length === 0) {
-          return Response.json({ error: "No JPEG, PNG or WebP images were found at that Drive link." }, { status: 400, headers: corsHeaders });
+          return Response.json(
+            { error: "No JPEG, PNG or WebP images were found at that Drive link." },
+            { status: 400, headers: corsHeaders },
+          );
         }
 
-        // Validation, disk-capacity checks and collision-resistant renaming
-        // all happen in the beforeOperation hook below (the same path every
-        // manual upload goes through) — it fires automatically because
-        // payload.create() sets req.file from the `file` option.
-        const totalBytes = candidates.reduce((sum, candidate) => sum + (candidate.size ?? 0), 0);
+        const totalBytes = candidates.reduce((sum, c) => sum + (c.size ?? 0), 0);
         let cancelled = false;
+
         const stream = new ReadableStream<Uint8Array>({
           start(controller) {
             const encoder = new TextEncoder();
@@ -151,7 +164,11 @@ export const Media: CollectionConfig = {
                   const downloaded = await downloadDriveFile(candidate, mode, ({ loaded }) => {
                     fileLoaded = loaded;
                     const now = Date.now();
-                    if (loaded < (candidate.size ?? Number.POSITIVE_INFINITY) && now - lastProgressAt < 150) return;
+                    if (
+                      loaded < (candidate.size ?? Number.POSITIVE_INFINITY) &&
+                      now - lastProgressAt < 150
+                    )
+                      return;
                     lastProgressAt = now;
                     emit({
                       type: "progress",
@@ -220,7 +237,10 @@ export const Media: CollectionConfig = {
                   currentFile: index + 1,
                   totalFiles: candidates.length,
                   completedFiles: index + 1,
-                  transferredBytes: totalBytes > 0 ? Math.min(accountedBytes, totalBytes) : accountedBytes,
+                  transferredBytes:
+                    totalBytes > 0
+                      ? Math.min(accountedBytes, totalBytes)
+                      : accountedBytes,
                   totalBytes,
                   imported,
                   failed,
@@ -232,7 +252,10 @@ export const Media: CollectionConfig = {
                 controller.close();
               }
             })().catch((error) => {
-              emit({ type: "error", error: error instanceof Error ? error.message : "Google Drive import failed." });
+              emit({
+                type: "error",
+                error: error instanceof Error ? error.message : "Google Drive import failed.",
+              });
               if (!cancelled) controller.close();
             });
           },
@@ -253,17 +276,70 @@ export const Media: CollectionConfig = {
       async ({ operation, req }) => {
         if ((operation === "create" || operation === "update") && req.file) {
           const file = req.file as unknown as UploadCandidate;
-          await ensureStorageLayout(storage);
+
+          // Validate mime type and magic bytes regardless of storage backend
           await validateUploadCandidate(file, env.UPLOAD_MAX_BYTES);
-          await assertStorageCapacity(storage.root, file.size, env.STORAGE_RESERVE_BYTES);
-          req.file.name = createStoredFilename(file.name);
+
+          if (isR2Active()) {
+            // R2 mode: assign a collision-resistant filename; Payload's
+            // staticDir handler is bypassed so we upload manually in
+            // afterOperation instead. No disk-capacity check needed.
+            req.file.name = createStoredFilename(file.name);
+          } else {
+            // Local disk mode: check capacity and let Payload write the file
+            await ensureStorageLayout(storage);
+            await assertStorageCapacity(storage.root, file.size, env.STORAGE_RESERVE_BYTES);
+            req.file.name = createStoredFilename(file.name);
+          }
+        }
+      },
+    ],
+    afterOperation: [
+      async ({ operation, result, req }) => {
+        // R2 upload: after Payload has saved the DB record, push the file bytes
+        // to R2. We do this after the DB write so if R2 fails the record can be
+        // retried rather than leaving a phantom DB entry with no file.
+        if (
+          isR2Active() &&
+          (operation === "create" || operation === "update") &&
+          req.file
+        ) {
+          const file = req.file as unknown as UploadCandidate;
+          const filename = (result as Record<string, unknown>)?.filename as string | undefined;
+          if (filename && file.data) {
+            try {
+              await r2PutObject(filename, file.data, file.mimetype);
+            } catch (error) {
+              // Log but don't throw — the DB record is already saved.
+              // The photo source route will return 404 until the file is
+              // re-uploaded, which is recoverable via a re-upload in Studio.
+              console.error(`[R2] Failed to upload ${filename}:`, error);
+            }
+          }
+        }
+      },
+    ],
+    afterDelete: [
+      async ({ doc }) => {
+        notifyContentChanged("media");
+        // Clean up the stored file from R2 or local disk
+        const filename = (doc as Record<string, unknown>)?.filename;
+        if (typeof filename === "string") {
+          try {
+            await deleteFile(filename, env.STORAGE_ROOT);
+          } catch (error) {
+            console.error(`[storage] Failed to delete ${filename}:`, error);
+          }
         }
       },
     ],
     afterChange: [() => notifyContentChanged("media")],
-    afterDelete: [() => notifyContentChanged("media")],
   },
   upload: {
+    // When R2 is active, staticDir still needs a value for Payload's internal
+    // upload pipeline (it writes to disk transiently so we can read req.file.data
+    // in afterOperation). We clean up nothing — the file in STORAGE_ROOT is the
+    // fallback anyway. When R2 is not active, this IS the permanent store.
     staticDir: storage.root,
     bulkUpload: true,
     pasteURL: false,
@@ -281,7 +357,10 @@ export const Media: CollectionConfig = {
       label: "Accessibility description (optional)",
       type: "text",
       maxLength: 180,
-      admin: { description: "Used by screen readers and shown if the image cannot load. This text is not displayed as a caption." },
+      admin: {
+        description:
+          "Used by screen readers and shown if the image cannot load. This text is not displayed as a caption.",
+      },
     },
     {
       name: "caption",
@@ -308,7 +387,10 @@ export const Media: CollectionConfig = {
         { label: "Website/story image", value: "site" },
         { label: "Partner logo", value: "partner" },
       ],
-      admin: { description: "Keeps logos and website artwork out of the public event gallery." },
+      admin: {
+        description:
+          "Keeps logos and website artwork out of the public event gallery.",
+      },
     },
     {
       name: "galleryEdition",
@@ -317,7 +399,8 @@ export const Media: CollectionConfig = {
       relationTo: "event-editions",
       index: true,
       admin: {
-        condition: (_, siblingData) => siblingData?.assetType === "event-gallery" || siblingData?.showInGallery === true,
+        condition: (_, siblingData) =>
+          siblingData?.assetType === "event-gallery" || siblingData?.showInGallery === true,
         description: "The archive this photograph belongs to.",
       },
     },
@@ -328,9 +411,18 @@ export const Media: CollectionConfig = {
       defaultValue: false,
       required: true,
       index: true,
-      admin: { description: "The photo also needs to be Live before visitors can see it." },
+      admin: {
+        description: "The photo also needs to be Live before visitors can see it.",
+      },
     },
-    { name: "active", type: "checkbox", defaultValue: false, required: true, index: true, admin: { description: "Controls whether visitors can see this photo publicly." } },
+    {
+      name: "active",
+      type: "checkbox",
+      defaultValue: false,
+      required: true,
+      index: true,
+      admin: { description: "Controls whether visitors can see this photo publicly." },
+    },
     { name: "featured", type: "checkbox", defaultValue: false, required: true, index: true },
     {
       name: "uploadedBy",

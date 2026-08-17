@@ -9,32 +9,51 @@ type ImageOptions = {
 /**
  * Builds the public URL for a media asset.
  *
- * On the VPS monolith the imgproxy instance signs URLs using HMAC so the
- * source route is protected. On Vercel we do not have the signing keys, but
- * that is fine — Vercel only renders the frontend, and image URLs always point
- * at the VPS imgproxy (`IMGPROXY_PUBLIC_URL`). The browser fetches images
- * directly from the VPS, not through Vercel.
+ * Storage modes:
  *
- * The signed-URL logic has moved into the VPS-only site-data API endpoint
- * (`/api/public-data` on the VPS) which builds URLs server-side before sending
- * the JSON response. This file now just passes through the URL as received
- * from the API, or builds a plain imgproxy URL for the VPS monolith path.
+ * 1. R2 active (S3_PUBLIC_URL is set on the backend):
+ *    The photo source route returns a 302 redirect to the R2 public URL.
+ *    Images are served directly from Cloudflare's edge — no imgproxy needed.
+ *    The URL shape is: {S3_PUBLIC_URL}/{filename}
+ *    Since we only store UUID filenames in the DB (not the public URL), we
+ *    still route through /api/photos/[id]/source which does the DB lookup
+ *    and redirects to R2. This keeps the public interface identical whether
+ *    R2 or local disk is in use.
+ *
+ * 2. Local disk + imgproxy (IMGPROXY_PUBLIC_URL is set):
+ *    Routes through imgproxy for resizing/optimisation.
+ *    URL shape: {IMGPROXY_PUBLIC_URL}/rs:fit:{w}:{h}:0/q:85/{base64url-source}.webp
+ *
+ * 3. Local disk, no imgproxy (development):
+ *    Falls back to /api/photos/[id]/source directly.
  */
 export function buildPublicImageUrl(photoId: string, options: ImageOptions = {}): string {
   const env = getFrontendEnv();
-  const imgproxyBase = env.IMGPROXY_PUBLIC_URL.replace(/\/$/, "");
 
-  const width = Math.min(Math.max(options.width ?? 2200, 1), 5000);
-  const height = Math.min(Math.max(options.height ?? 0, 0), 5000);
-  const format = options.format ?? "webp";
-
-  // When running on the VPS the API URL is the same origin, so use the
-  // internal /api/photos/[id]/source path as the imgproxy source.
-  // Signing is handled inside the VPS-side loadPublicSiteData (server env).
+  // Always route through /api/photos/[id]/source.
+  // On R2: that route issues a 302 redirect to the R2 public URL.
+  // On local disk + imgproxy: that route is the imgproxy source.
+  // On local disk, no imgproxy: that route streams the file directly.
   const apiBase = (env.NEXT_PUBLIC_API_URL ?? env.NEXT_PUBLIC_SITE_URL).replace(/\/$/, "");
   const sourcePath = `${apiBase}/api/photos/${encodeURIComponent(photoId)}/source`;
-  const encodedSource = Buffer.from(sourcePath).toString("base64url");
-  const processingPath = `/rs:fit:${width}:${height}:0/q:85/${encodedSource}.${format}`;
 
-  return `${imgproxyBase}${processingPath}`;
+  // If imgproxy is configured (non-default URL), wrap the source in an
+  // imgproxy processing path for resizing. On R2 the redirect happens
+  // transparently — imgproxy follows the 302 and fetches from R2.
+  const imgproxyBase = env.IMGPROXY_PUBLIC_URL.replace(/\/$/, "");
+  const isImgproxyConfigured =
+    imgproxyBase !== "http://localhost:8080" && imgproxyBase !== "";
+
+  if (isImgproxyConfigured) {
+    const width = Math.min(Math.max(options.width ?? 2200, 1), 5000);
+    const height = Math.min(Math.max(options.height ?? 0, 0), 5000);
+    const format = options.format ?? "webp";
+    const encodedSource = Buffer.from(sourcePath).toString("base64url");
+    const processingPath = `/rs:fit:${width}:${height}:0/q:85/${encodedSource}.${format}`;
+    return `${imgproxyBase}${processingPath}`;
+  }
+
+  // No imgproxy — return the source URL directly.
+  // On R2: browser follows the 302 to the R2 public URL.
+  return sourcePath;
 }
