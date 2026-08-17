@@ -36,6 +36,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
+# Railway injects PORT; Render injects PORT too. Default to 3000 for Docker Compose and local use.
 ENV PORT=3000
 RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs nextjs
 COPY --from=builder /app/public ./public
@@ -59,7 +60,17 @@ for (const name of names) {
   fs.symlinkSync(target, path.join(linkRoot, packageName), 'dir')
 }
 NODE
+# Copy pnpm + node_modules so `pnpm migrate` runs in the final image.
+# This adds ~200 MB but avoids a separate migration container on Railway.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=deps --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=deps --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
+# Payload migration files must be present at runtime.
+COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
-EXPOSE 3000
-CMD ["node", "server.js"]
+EXPOSE ${PORT}
+# Run migrations first, then start the app.
+# On Render/Railway: this is the only container — migrations run automatically on every deploy.
+# On Docker Compose: the dedicated `migrate` service handles this instead (this CMD is not used).
+CMD ["sh", "-c", "pnpm migrate && node server.js"]
