@@ -212,7 +212,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-re
 - Usually means `DATABASE_URL` is missing or wrong. Check the Render environment variables. The error message will include `connect ECONNREFUSED` or `password authentication failed`.
 
 **`connect ENETUNREACH` to an IPv6 address (`2406:…:5432`)**
-- Render has no outbound IPv6. Replace `DATABASE_URL` with the Supabase **Session pooler** URI (`aws-0-<region>.pooler.supabase.com:6543`), not Direct Connection. Then redeploy (no code change required once the env var is updated).
+- Render has no outbound IPv6. Replace `DATABASE_URL` with the Supabase **Session pooler** URI (`aws-0-<region>.pooler.supabase.com`), not Direct Connection. Then redeploy.
+
+**`self-signed certificate in certificate chain`**
+- node-pg treats `sslmode=require` as `verify-full`. The app now sets libpq-compatible SSL for remote databases. Redeploy after this fix; keep `?sslmode=require` on `DATABASE_URL`.
 
 **Studio login redirects back to login**
 - `PAYLOAD_SECRET` is missing or changed between deploys. All existing sessions are invalidated when this changes.

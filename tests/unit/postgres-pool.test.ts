@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isSupabaseDirectConnection } from "@/lib/postgres-pool"
+import { getPostgresPoolConfig, isSupabaseDirectConnection, withManagedPostgresSsl } from "@/lib/postgres-pool"
 
 describe("isSupabaseDirectConnection", () => {
   it("detects the IPv6-only direct host on port 5432", () => {
@@ -19,5 +19,34 @@ describe("isSupabaseDirectConnection", () => {
   it("allows local and Docker hosts", () => {
     expect(isSupabaseDirectConnection("postgresql://agomoni:change-me@localhost:5432/agomoni_run")).toBe(false)
     expect(isSupabaseDirectConnection("postgresql://agomoni:change-me@postgres:5432/agomoni_run")).toBe(false)
+  })
+})
+
+describe("withManagedPostgresSsl", () => {
+  it("leaves local Docker URLs unchanged", () => {
+    const local = "postgresql://agomoni:change-me@localhost:5432/agomoni_run"
+    expect(withManagedPostgresSsl(local)).toBe(local)
+  })
+
+  it("adds libpq-compatible sslmode for Supabase pooler URLs", () => {
+    const url = withManagedPostgresSsl(
+      "postgresql://postgres.abcd:pass@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres",
+    )
+    expect(url).toContain("sslmode=require")
+    expect(url).toContain("uselibpqcompat=true")
+  })
+})
+
+describe("getPostgresPoolConfig", () => {
+  it("disables TLS verification for remote hosts so Supabase pooler certs work", () => {
+    const config = getPostgresPoolConfig(
+      "postgresql://postgres.abcd:pass@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require",
+    )
+    expect(config.ssl).toEqual({ rejectUnauthorized: false })
+  })
+
+  it("does not force TLS for localhost", () => {
+    const config = getPostgresPoolConfig("postgresql://agomoni:change-me@localhost:5432/agomoni_run")
+    expect(config.ssl).toBeUndefined()
   })
 })

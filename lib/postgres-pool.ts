@@ -14,6 +14,10 @@ export function lookupIPv4(
   dns.lookup(hostname, { ...options, family: 4, all: false }, callback);
 }
 
+export function isLocalPostgresHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "postgres";
+}
+
 export function isSupabaseDirectConnection(connectionString: string): boolean {
   try {
     const { hostname, port } = new URL(connectionString);
@@ -24,15 +28,32 @@ export function isSupabaseDirectConnection(connectionString: string): boolean {
   }
 }
 
+/**
+ * node-pg 8.16+ treats sslmode=require as verify-full, which rejects Supabase's
+ * pooler chain (`self-signed certificate in certificate chain`). Restore libpq
+ * `require` semantics for remote hosts and skip TLS entirely for local Docker.
+ */
+export function withManagedPostgresSsl(connectionString: string): string {
+  const url = new URL(connectionString);
+  if (isLocalPostgresHost(url.hostname)) return connectionString;
+  if (!url.searchParams.has("sslmode")) url.searchParams.set("sslmode", "require");
+  url.searchParams.set("uselibpqcompat", "true");
+  return url.toString();
+}
+
 export function getPostgresPoolConfig(connectionString: string) {
   if (process.env.RENDER && process.env.NEXT_PHASE !== "phase-production-build" && isSupabaseDirectConnection(connectionString)) {
     throw new Error(
-      "DATABASE_URL uses Supabase Direct Connection (db.*.supabase.co:5432), which is IPv6-only. Render cannot reach IPv6. In Supabase: Connect → Session pooler, copy the URI (host aws-0-<region>.pooler.supabase.com, port 6543), add ?sslmode=require, and set that as DATABASE_URL.",
+      "DATABASE_URL uses Supabase Direct Connection (db.*.supabase.co:5432), which is IPv6-only. Render cannot reach IPv6. In Supabase: Connect → Session pooler, copy the URI (host aws-0-<region>.pooler.supabase.com), add ?sslmode=require, and set that as DATABASE_URL.",
     );
   }
 
+  const hostname = new URL(connectionString).hostname;
+  const remote = !isLocalPostgresHost(hostname);
+
   return {
-    connectionString,
+    connectionString: withManagedPostgresSsl(connectionString),
     lookup: lookupIPv4,
+    ...(remote ? { ssl: { rejectUnauthorized: false } } : {}),
   };
 }
