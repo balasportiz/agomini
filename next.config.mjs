@@ -1,7 +1,8 @@
 // next.config.mjs
-// withPayload() is intentionally absent — the frontend no longer imports
-// Payload at build time. Payload runs on Railway/Koyeb and is accessed via
-// its REST API. Only NEXT_PUBLIC_* vars are available at build time on Vercel.
+// withPayload() is intentionally absent so this config stays plain Next.js
+// (no Payload webpack/turbopack wrapper). Payload still ships in this app via
+// app/(payload)/api — see serverExternalPackages below for Turbopack build
+// compatibility with @payloadcms/db-postgres → drizzle-kit → esbuild.
 
 /** Safely parse a URL, returning null on failure. */
 function tryURL(raw) {
@@ -39,7 +40,23 @@ const remotePatterns = [
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  serverExternalPackages: ["sharp", "pg", "pg-pool", "@node-rs/argon2", "payload"],
+  // Next 16 Turbopack must not bundle these. Without externalizing the Postgres
+  // adapter (and its drizzle-kit/esbuild chain), `next build` fails parsing
+  // native esbuild binaries and optional @libsql/* requires.
+  serverExternalPackages: [
+    "sharp",
+    "pg",
+    "pg-pool",
+    "@node-rs/argon2",
+    "payload",
+    "graphql",
+    "@payloadcms/db-postgres",
+    "@payloadcms/drizzle",
+    "drizzle-kit",
+    "drizzle-kit/api",
+    "esbuild",
+    "esbuild-register",
+  ],
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns,
