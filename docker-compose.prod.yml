@@ -1,0 +1,24 @@
+services:
+  postgres:
+    ports: []
+    volumes:
+      - /mnt/data/postgres:/var/lib/postgresql/data
+      - /mnt/data/backups:/backups
+
+  pgbackups:
+    volumes:
+      - /mnt/data/backups:/backups
+
+  migrate:
+    # Production must never auto-accept Payload's dev-schema data-loss warning.
+    command: ["pnpm", "migrate"]
+    volumes:
+      - /mnt/data/photos:/mnt/data/photos
+
+  app:
+    volumes:
+      - /mnt/data/photos:/mnt/data/photos
+
+  imgproxy:
+    volumes:
+      - /mnt/data/cache:/var/cache/imgproxy
