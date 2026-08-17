@@ -4,7 +4,7 @@
  * Resolves a media record ID to its raw photo file.
  *
  * Storage modes:
- *  - R2 active:     302 redirect to the R2 public URL (browser/imgproxy fetches from CF edge)
+ *  - R2 active:     authenticated GetObject stream (does not need a public bucket URL)
  *  - Local disk:    streams the file from STORAGE_ROOT
  *
  * On Vercel: proxies the redirect/stream to the VPS (same semantics, just
@@ -65,7 +65,8 @@ export async function GET(
     const { getPayload } = await import("payload");
     const { default: config } = await import("@payload-config");
     const { getServerEnv } = await import("@/lib/env");
-    const { isR2Active, r2PublicUrl } = await import("@/lib/storage");
+    const { streamFile } = await import("@/lib/storage");
+    const env = getServerEnv();
 
     const payload = await getPayload({ config });
     const { user } = await payload.auth({ headers: request.headers });
@@ -80,40 +81,23 @@ export async function GET(
     if (typeof photo.filename !== "string" || typeof photo.mimeType !== "string") return notFound();
     if (!user && photo.active === false) return notFound();
 
-    const filename = photo.filename;
-
-    // ── R2 mode: 302 redirect to public R2 URL ──────────────────────────
-    if (isR2Active()) {
-      const publicUrl = r2PublicUrl(filename);
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: publicUrl,
-          "Cache-Control": "public, max-age=3600",
-        },
-      });
-    }
-
-    // ── Local disk mode: stream the file ───────────────────────────────
-    const { streamFile } = await import("@/lib/storage");
-    const env = getServerEnv();
-    const { stream, size } = await streamFile(filename, env.STORAGE_ROOT);
+    const { stream, size, mimeType } = await streamFile(photo.filename, env.STORAGE_ROOT);
 
     const updatedAt = String(photo.updatedAt ?? "");
     const etag = `"${id}-${updatedAt}-${size}"`;
     if (request.headers.get("if-none-match") === etag)
       return new Response(null, { status: 304, headers: { ETag: etag } });
 
-    return new Response(stream, {
-      headers: {
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
-        "Content-Length": String(size),
-        "Content-Type": photo.mimeType as string,
-        ETag: etag,
-        "X-Content-Type-Options": "nosniff",
-      },
+    const headers = new Headers({
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      "Content-Type": mimeType || (photo.mimeType as string),
+      ETag: etag,
+      "X-Content-Type-Options": "nosniff",
     });
-  } catch {
+    if (size > 0) headers.set("Content-Length", String(size));
+    return new Response(stream, { headers });
+  } catch (error) {
+    console.error("[photos/source] failed", id, error);
     return notFound();
   }
 }

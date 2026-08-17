@@ -33,13 +33,7 @@ export function buildStudioImageUrl(photoId: string): string {
 
 export function buildPublicImageUrl(photoId: string, options: ImageOptions = {}): string {
   const env = getFrontendEnv();
-
-  // Always route through /api/photos/[id]/source.
-  // On R2: that route issues a 302 redirect to the R2 public URL.
-  // On local disk + imgproxy: that route is the imgproxy source.
-  // On local disk, no imgproxy: that route streams the file directly.
-  const apiBase = (env.NEXT_PUBLIC_API_URL ?? env.NEXT_PUBLIC_SITE_URL).replace(/\/$/, "");
-  const sourcePath = `${apiBase}/api/photos/${encodeURIComponent(photoId)}/source`;
+  const relativeSource = buildStudioImageUrl(photoId);
 
   // If imgproxy is configured (non-default URL), wrap the source in an
   // imgproxy processing path for resizing. On R2 the redirect happens
@@ -49,6 +43,8 @@ export function buildPublicImageUrl(photoId: string, options: ImageOptions = {})
     imgproxyBase !== "http://localhost:8080" && imgproxyBase !== "";
 
   if (isImgproxyConfigured) {
+    const apiBase = (env.NEXT_PUBLIC_API_URL ?? env.NEXT_PUBLIC_SITE_URL).replace(/\/$/, "");
+    const sourcePath = `${apiBase}${relativeSource}`;
     const width = Math.min(Math.max(options.width ?? 2200, 1), 5000);
     const height = Math.min(Math.max(options.height ?? 0, 0), 5000);
     const format = options.format ?? "webp";
@@ -57,7 +53,11 @@ export function buildPublicImageUrl(photoId: string, options: ImageOptions = {})
     return `${imgproxyBase}${processingPath}`;
   }
 
-  // No imgproxy — return the source URL directly.
-  // On R2: browser follows the 302 to the R2 public URL.
-  return sourcePath;
+  // Same-origin on the Render monolith so Docker builds that default
+  // NEXT_PUBLIC_SITE_URL to localhost still serve photos in the browser.
+  // Vercel sets NEXT_PUBLIC_API_URL to the Render origin.
+  if (env.NEXT_PUBLIC_API_URL) {
+    return `${env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}${relativeSource}`;
+  }
+  return relativeSource;
 }

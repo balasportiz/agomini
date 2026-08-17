@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, statfs } from "node:fs/promises";
 import path from "node:path";
+import { Readable } from "node:stream";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -446,13 +447,17 @@ export async function streamFile(
     if (!response.Body) throw new Error(`R2 object not found: ${filename}`);
     const size = response.ContentLength ?? 0;
     const mimeType = response.ContentType;
-    // Convert Web ReadableStream (R2 SDK response) to a passthrough
-    const body = response.Body as unknown as ReadableStream;
-    return { stream: body, size, mimeType };
+    const body = response.Body;
+    let stream: ReadableStream;
+    if (typeof body.transformToWebStream === "function") {
+      stream = body.transformToWebStream();
+    } else {
+      stream = Readable.toWeb(body as unknown as Readable) as ReadableStream;
+    }
+    return { stream, size, mimeType };
   }
   // Local disk
   const { stat } = await import("node:fs/promises");
-  const { Readable } = await import("node:stream");
   const filePath = resolveStoredFile(storageRoot, filename);
   const fileStats = await stat(filePath);
   const nodeStream = createReadStream(filePath);
