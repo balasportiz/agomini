@@ -117,7 +117,7 @@ Then redeploy Vercel so it picks up `NEXT_PUBLIC_API_URL`.
 ### Option B — Supabase (free forever, recommended for now)
 
 1. Go to [supabase.com](https://supabase.com) → New project
-2. Settings → Database → **Connection string** → copy the URI
+2. Project → **Connect** → **Session pooler** (port **6543**). Do **not** use Direct Connection (`db.*.supabase.co:5432`) — that host is IPv6-only and Render cannot reach it.
 3. Add `?sslmode=require` to the end if not already present
 4. Set as `DATABASE_URL` in Render environment variables
 
@@ -210,6 +210,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-re
 
 **`pnpm migrate` fails on first deploy**
 - Usually means `DATABASE_URL` is missing or wrong. Check the Render environment variables. The error message will include `connect ECONNREFUSED` or `password authentication failed`.
+
+**`connect ENETUNREACH` to an IPv6 address (`2406:…:5432`)**
+- Render has no outbound IPv6. Replace `DATABASE_URL` with the Supabase **Session pooler** URI (`aws-0-<region>.pooler.supabase.com:6543`), not Direct Connection. Then redeploy (no code change required once the env var is updated).
 
 **Studio login redirects back to login**
 - `PAYLOAD_SECRET` is missing or changed between deploys. All existing sessions are invalidated when this changes.

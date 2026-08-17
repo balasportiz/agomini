@@ -16,6 +16,7 @@ import { Navigation } from "@/globals/Navigation";
 import { SiteSettings } from "@/globals/SiteSettings";
 import { getServerEnv } from "@/lib/env";
 import { initializeDefaultContent } from "@/lib/initialize-content";
+import { getPostgresPoolConfig } from "@/lib/postgres-pool";
 import { getStorageLayout } from "@/lib/storage";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,7 +40,7 @@ export default buildConfig({
   cors: [env.NEXT_PUBLIC_SITE_URL],
   csrf: [env.NEXT_PUBLIC_SITE_URL],
   db: postgresAdapter({
-    pool: { connectionString: env.DATABASE_URL },
+    pool: getPostgresPoolConfig(env.DATABASE_URL),
     migrationDir: path.resolve(dirname, "migrations"),
     idType: "uuid",
   }),

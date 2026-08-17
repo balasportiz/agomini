@@ -37,6 +37,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
+# Prefer A records so dual-stack DB hosts do not pick IPv6 (ENETUNREACH on Render).
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
 # Railway injects PORT; Render injects PORT too. Default to 3000 for Docker Compose and local use.
 ENV PORT=3000
 RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs nextjs
