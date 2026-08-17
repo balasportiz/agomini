@@ -4,8 +4,27 @@ import {
   createStoredFilename,
   getStorageLayout,
   isAllowedImageSignature,
+  normalizeR2Endpoint,
   resolveStoredFile,
 } from "@/lib/storage"
+
+describe("normalizeR2Endpoint", () => {
+  it("keeps the account-id S3 API host", () => {
+    expect(normalizeR2Endpoint("https://abc123.r2.cloudflarestorage.com/")).toBe(
+      "https://abc123.r2.cloudflarestorage.com",
+    )
+  })
+
+  it("expands the bare r2.cloudflarestorage.com host with S3_ACCOUNT_ID", () => {
+    expect(normalizeR2Endpoint("r2.cloudflarestorage.com", "abc123")).toBe(
+      "https://abc123.r2.cloudflarestorage.com",
+    )
+  })
+
+  it("rejects the bare host when the account id is missing", () => {
+    expect(() => normalizeR2Endpoint("https://r2.cloudflarestorage.com")).toThrow(/S3_ACCOUNT_ID/)
+  })
+})
 
 describe("storage helpers", () => {
   it("keeps temporary uploads inside the mounted photo directory", () => {

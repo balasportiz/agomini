@@ -42,7 +42,9 @@ const backendEnvSchema = frontendEnvSchema.extend({
   GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: z.string().default(""),
   // Cloudflare R2 (S3-compatible). All four must be set to enable R2 storage.
   // Leave S3_BUCKET empty to keep using local disk (default for Docker/VPS).
-  S3_ENDPOINT: z.string().url().optional(),
+  S3_ENDPOINT: z.string().min(1).optional(),
+  // Account ID is required when S3_ENDPOINT is the bare host r2.cloudflarestorage.com
+  S3_ACCOUNT_ID: z.string().min(1).optional(),
   S3_BUCKET: z.string().default(""),
   S3_ACCESS_KEY_ID: z.string().default(""),
   S3_SECRET_ACCESS_KEY: z.string().default(""),
@@ -51,7 +53,7 @@ const backendEnvSchema = frontendEnvSchema.extend({
   S3_PUBLIC_URL: z.string().url().optional(),
 }).superRefine((env, context) => {
   if (env.NODE_ENV !== "production") return;
-  const r2Active = Boolean(env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.S3_PUBLIC_URL);
+  const r2Active = Boolean(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.S3_PUBLIC_URL);
   // When R2 is the storage backend, imgproxy signing is optional because
   // images are served directly from the R2 public URL.
   if (!r2Active) {

@@ -19,6 +19,7 @@ import {
   getStorageLayout,
   isR2Active,
   r2PutObject,
+  readUploadBuffer,
   validateUploadCandidate,
   type UploadCandidate,
 } from "@/lib/storage";
@@ -294,29 +295,15 @@ export const Media: CollectionConfig = {
         }
       },
     ],
-    afterOperation: [
-      async ({ operation, result, req }) => {
-        // R2 upload: after Payload has saved the DB record, push the file bytes
-        // to R2. We do this after the DB write so if R2 fails the record can be
-        // retried rather than leaving a phantom DB entry with no file.
-        if (
-          isR2Active() &&
-          (operation === "create" || operation === "update") &&
-          req.file
-        ) {
+    beforeChange: [
+      async ({ operation, req, data }) => {
+        if (isR2Active() && (operation === "create" || operation === "update") && req.file) {
           const file = req.file as unknown as UploadCandidate;
-          const filename = (result as Record<string, unknown>)?.filename as string | undefined;
-          if (filename && file.data) {
-            try {
-              await r2PutObject(filename, file.data, file.mimetype);
-            } catch (error) {
-              // Log but don't throw — the DB record is already saved.
-              // The photo source route will return 404 until the file is
-              // re-uploaded, which is recoverable via a re-upload in Studio.
-              console.error(`[R2] Failed to upload ${filename}:`, error);
-            }
-          }
+          const filename = file.name;
+          const bytes = await readUploadBuffer(file);
+          await r2PutObject(filename, bytes, file.mimetype);
         }
+        return data;
       },
     ],
     afterDelete: [
@@ -336,10 +323,9 @@ export const Media: CollectionConfig = {
     afterChange: [() => notifyContentChanged("media")],
   },
   upload: {
-    // When R2 is active, staticDir still needs a value for Payload's internal
-    // upload pipeline (it writes to disk transiently so we can read req.file.data
-    // in afterOperation). We clean up nothing — the file in STORAGE_ROOT is the
-    // fallback anyway. When R2 is not active, this IS the permanent store.
+    disableLocalStorage: isR2Active(),
+    // When R2 is active, Payload keeps the file in memory/temp; we push bytes
+    // to R2 in afterOperation. staticDir is only the local-disk fallback.
     staticDir: storage.root,
     bulkUpload: true,
     pasteURL: false,

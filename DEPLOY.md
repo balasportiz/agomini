@@ -46,7 +46,8 @@ STORAGE_ROOT          ./storage/photos
 NODE_ENV              production
 
 # Cloudflare R2
-S3_ENDPOINT           https://4229c83669f0f7a0311f13c4974cdeae.r2.cloudflarestorage.com
+S3_ENDPOINT           https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_ACCOUNT_ID         <32-char Cloudflare account id, if endpoint is only r2.cloudflarestorage.com>
 S3_BUCKET             agomonirun
 S3_ACCESS_KEY_ID      <your R2 access key>
 S3_SECRET_ACCESS_KEY  <your R2 secret key>

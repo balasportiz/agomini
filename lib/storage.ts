@@ -23,13 +23,11 @@ export type StorageLayout = {
   temp: string;
 };
 
-export type UploadCandidate = {
-  data?: Buffer;
-  mimetype: string;
-  name: string;
-  size: number;
-  tempFilePath?: string;
-};
+export async function readUploadBuffer(file: UploadCandidate): Promise<Buffer> {
+  if (file.data && file.data.length > 0) return file.data;
+  if (file.tempFilePath) return readFile(file.tempFilePath);
+  throw new Error("Upload file bytes are missing");
+}
 
 // ---------------------------------------------------------------------------
 // R2 / S3 client (lazy singleton — only constructed when S3_BUCKET is set)
@@ -47,26 +45,55 @@ let cachedR2Client: S3Client | undefined;
 let cachedR2Config: R2Config | undefined;
 
 /**
+ * Accepts the Cloudflare S3 API host in any of the shapes the dashboard shows:
+ *   https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+ *   https://r2.cloudflarestorage.com  (+ S3_ACCOUNT_ID)
+ *   r2.cloudflarestorage.com
+ */
+export function normalizeR2Endpoint(raw: string, accountId?: string): string {
+  let value = raw.trim();
+  if (!value) throw new Error("S3_ENDPOINT is empty");
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  const url = new URL(value);
+  const host = url.hostname.toLowerCase();
+  if (host === "r2.cloudflarestorage.com" || host === "www.r2.cloudflarestorage.com") {
+    const id = accountId?.trim();
+    if (!id) {
+      throw new Error(
+        "S3_ENDPOINT is r2.cloudflarestorage.com. Set S3_ACCOUNT_ID or use https://<ACCOUNT_ID>.r2.cloudflarestorage.com",
+      );
+    }
+    url.hostname = `${id}.r2.cloudflarestorage.com`;
+  }
+  return url.origin;
+}
+
+/**
  * Returns R2 config and a lazy S3Client if all four R2 env vars are set,
  * or null when local-disk mode should be used instead.
  */
 export function getR2(): { client: S3Client; config: R2Config } | null {
-  const endpoint = process.env.S3_ENDPOINT;
+  const rawEndpoint = process.env.S3_ENDPOINT;
   const bucket = process.env.S3_BUCKET;
   const accessKeyId = process.env.S3_ACCESS_KEY_ID;
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
   const publicUrl = process.env.S3_PUBLIC_URL;
 
-  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey || !publicUrl) return null;
+  if (!rawEndpoint || !bucket || !accessKeyId || !secretAccessKey || !publicUrl) return null;
 
-  if (!cachedR2Client || !cachedR2Config) {
+  const endpoint = normalizeR2Endpoint(rawEndpoint, process.env.S3_ACCOUNT_ID);
+
+  if (!cachedR2Client || !cachedR2Config || cachedR2Config.endpoint !== endpoint || cachedR2Config.bucket !== bucket) {
     cachedR2Config = { endpoint, bucket, accessKeyId, secretAccessKey, publicUrl };
     cachedR2Client = new S3Client({
       region: "auto",
       endpoint,
       credentials: { accessKeyId, secretAccessKey },
-      // R2 requires path-style URLs
-      forcePathStyle: false,
+      // Account-id host + path-style: https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<bucket>/<key>
+      forcePathStyle: true,
+      // AWS SDK 3.729+ sends CRC32 checksums that R2 rejects (PutObject 501/400).
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
     });
   }
   return { client: cachedR2Client, config: cachedR2Config };
