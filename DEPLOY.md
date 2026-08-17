@@ -40,7 +40,7 @@ In Render dashboard → your service → **Environment** → add each variable:
 ```
 DATABASE_URL          postgresql://user:pass@host:5432/db?sslmode=require
 PAYLOAD_SECRET        <at least 32 random characters>
-NEXT_PUBLIC_SITE_URL  https://agomoni-backend.onrender.com
+NEXT_PUBLIC_SITE_URL  https://agomonirun.com
 APP_INTERNAL_URL      http://localhost:3000
 STORAGE_ROOT          ./storage/photos
 NODE_ENV              production
@@ -64,7 +64,7 @@ GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON
 In Render dashboard → your service → **Environment** → **Build & Deploy** section, add:
 
 ```
-NEXT_PUBLIC_SITE_URL   https://agomoni-backend.onrender.com
+NEXT_PUBLIC_SITE_URL   https://agomonirun.com
 IMGPROXY_PUBLIC_URL    http://localhost:8080
 ```
 
@@ -86,21 +86,22 @@ Then:
 
 ### Step 5 — Create the first admin account
 
-Open `https://agomoni-backend.onrender.com/studio` and create the first user.
+After the user exists in the database, sign in at `https://agomonirun.com/studio/login`.
+Studio on Vercel proxies `/api/*` to Render so the auth cookie stays on agomonirun.com.
 
-> **Free tier cold start:** The service sleeps after 15 minutes of inactivity. The first request after sleep takes ~30 seconds. This is expected on the free plan.
+> **Free tier cold start:** The Render API sleeps after 15 minutes of inactivity. The first request after sleep takes ~30 seconds. This is expected on the free plan.
 
 ### Step 6 — Set up Vercel frontend
 
 In Vercel dashboard → your project → **Settings → Environment Variables** add:
 
 ```
-NEXT_PUBLIC_SITE_URL   https://agomoni.vercel.app
+NEXT_PUBLIC_SITE_URL   https://agomonirun.com
 NEXT_PUBLIC_API_URL    https://agomoni-backend.onrender.com
 IMGPROXY_PUBLIC_URL    http://localhost:8080
 ```
 
-Then redeploy Vercel so it picks up `NEXT_PUBLIC_API_URL`.
+`NEXT_PUBLIC_API_URL` must be the Render origin. Redeploy Vercel after changing it.
 
 ---
 

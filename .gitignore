@@ -23,6 +23,9 @@ yarn-error.log*
 # allow the template with placeholder values only
 !.env.example
 
+# generated Payload password hashes — never commit
+scripts/create-first-admin.sql
+
 # local storage: uploaded photos + database backups (contain user data,
 # password hashes — never commit)
 /storage/
