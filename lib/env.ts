@@ -50,7 +50,10 @@ const backendEnvSchema = frontendEnvSchema.extend({
   S3_SECRET_ACCESS_KEY: z.string().default(""),
   // Public base URL for R2 objects, e.g. https://pub-xxxx.r2.dev
   // or a custom domain you've configured in Cloudflare.
-  S3_PUBLIC_URL: z.string().url().optional(),
+  S3_PUBLIC_URL: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().url().optional(),
+  ),
 }).superRefine((env, context) => {
   if (env.NODE_ENV !== "production") return;
   const r2Active = Boolean(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.S3_PUBLIC_URL);

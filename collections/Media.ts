@@ -17,6 +17,7 @@ import {
   deleteFile,
   ensureStorageLayout,
   getStorageLayout,
+  getR2ConfigError,
   isR2Active,
   r2PutObject,
   readUploadBuffer,
@@ -276,6 +277,11 @@ export const Media: CollectionConfig = {
     beforeOperation: [
       async ({ operation, req }) => {
         if ((operation === "create" || operation === "update") && req.file) {
+          const r2Problem = getR2ConfigError();
+          if (r2Problem) throw new Error(r2Problem);
+          if (process.env.RENDER && !isR2Active()) {
+            throw new Error("Photo uploads on Render require complete S3_* R2 variables.");
+          }
           const file = req.file as unknown as UploadCandidate;
 
           // Validate mime type and magic bytes regardless of storage backend
@@ -285,12 +291,12 @@ export const Media: CollectionConfig = {
             // R2 mode: assign a collision-resistant filename; Payload's
             // staticDir handler is bypassed so we upload manually in
             // afterOperation instead. No disk-capacity check needed.
-            req.file.name = createStoredFilename(file.name);
+            req.file.name = createStoredFilename(file.name, undefined, file.mimetype);
           } else {
             // Local disk mode: check capacity and let Payload write the file
             await ensureStorageLayout(storage);
             await assertStorageCapacity(storage.root, file.size, env.STORAGE_RESERVE_BYTES);
-            req.file.name = createStoredFilename(file.name);
+            req.file.name = createStoredFilename(file.name, undefined, file.mimetype);
           }
         }
       },
@@ -301,7 +307,12 @@ export const Media: CollectionConfig = {
           const file = req.file as unknown as UploadCandidate;
           const filename = file.name;
           const bytes = await readUploadBuffer(file);
-          await r2PutObject(filename, bytes, file.mimetype);
+          try {
+            await r2PutObject(filename, bytes, file.mimetype);
+          } catch (error) {
+            console.error("[storage] R2 PutObject failed", error);
+            throw error;
+          }
         }
         return data;
       },
@@ -329,13 +340,17 @@ export const Media: CollectionConfig = {
     staticDir: storage.root,
     bulkUpload: true,
     pasteURL: false,
-    mimeTypes: ["image/jpeg", "image/png", "image/webp"],
-    resizeOptions: {
-      width: 5000,
-      height: 5000,
-      fit: "inside",
-      withoutEnlargement: true,
-    },
+    mimeTypes: ["image/jpeg", "image/jpg", "image/png", "image/webp"],
+    ...(isR2Active()
+      ? {}
+      : {
+          resizeOptions: {
+            width: 5000,
+            height: 5000,
+            fit: "inside" as const,
+            withoutEnlargement: true,
+          },
+        }),
   },
   fields: [
     {

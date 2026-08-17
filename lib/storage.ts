@@ -1,3 +1,4 @@
+import os from "node:os";
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, statfs } from "node:fs/promises";
@@ -13,7 +14,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"] as const;
 export type AllowedImageMimeType = (typeof ALLOWED_IMAGE_MIME_TYPES)[number];
 
 const allowedExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
@@ -76,11 +77,67 @@ export function normalizeR2Endpoint(raw: string, accountId?: string): string {
   return url.origin;
 }
 
+export function getR2ConfigError(): string | null {
+  const rawEndpoint = process.env.S3_ENDPOINT?.trim();
+  const bucket = process.env.S3_BUCKET?.trim();
+  const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
+  const publicUrl = process.env.S3_PUBLIC_URL?.trim();
+  const present = [rawEndpoint, bucket, accessKeyId, secretAccessKey, publicUrl].filter(Boolean).length;
+  if (present === 0) return null;
+  if (present < 5) {
+    return "R2 is only partly configured. Set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_PUBLIC_URL.";
+  }
+  try {
+    normalizeR2Endpoint(rawEndpoint!, process.env.S3_ACCOUNT_ID);
+  } catch (error) {
+    return error instanceof Error ? error.message : "S3_ENDPOINT is invalid.";
+  }
+  return null;
+}
+
+export function getUploadTempDir(storageRoot: string): string {
+  if (process.env.RENDER || isR2Active()) {
+    return path.join(os.tmpdir(), "agomoni-uploads");
+  }
+  return getStorageLayout(storageRoot).temp;
+}
+
 /**
- * Returns R2 config and a lazy S3Client if all four R2 env vars are set,
+ * AWS SDK 3.729+ still attaches CRC32 checksums to PutObject even with
+ * WHEN_REQUIRED, because S3 now treats PutObject as a checksum-required
+ * operation. R2 rejects those headers. Strip them *before* SigV4 signing
+ * so the canonical request matches what Cloudflare actually receives.
+ */
+function stripUnsupportedR2Checksums(client: S3Client): void {
+  const middleware = (next: (args: unknown) => Promise<unknown>) => async (args: {
+    request?: { headers?: Record<string, string> };
+  }) => {
+    const headers = args.request?.headers;
+    if (headers) {
+      for (const key of Object.keys(headers)) {
+        if (/^x-amz-checksum/i.test(key) || /^x-amz-sdk-checksum/i.test(key)) {
+          delete headers[key];
+        }
+      }
+    }
+    return next(args);
+  };
+
+  // End of `build` is after checksum middleware and before SigV4 in `finalizeRequest`.
+  client.middlewareStack.add(middleware as never, {
+    step: "build",
+    name: "stripR2ChecksumsAfterBuild",
+    priority: "low",
+  });
+}
+
+/**
+ * Returns R2 config and a lazy S3Client if all R2 env vars are set,
  * or null when local-disk mode should be used instead.
  */
 export function getR2(): { client: S3Client; config: R2Config } | null {
+  if (getR2ConfigError()) return null;
   const rawEndpoint = process.env.S3_ENDPOINT;
   const bucket = process.env.S3_BUCKET;
   const accessKeyId = process.env.S3_ACCESS_KEY_ID;
@@ -93,16 +150,18 @@ export function getR2(): { client: S3Client; config: R2Config } | null {
 
   if (!cachedR2Client || !cachedR2Config || cachedR2Config.endpoint !== endpoint || cachedR2Config.bucket !== bucket) {
     cachedR2Config = { endpoint, bucket, accessKeyId, secretAccessKey, publicUrl };
+    process.env.AWS_REQUEST_CHECKSUM_CALCULATION ??= "WHEN_REQUIRED";
+    process.env.AWS_RESPONSE_CHECKSUM_VALIDATION ??= "WHEN_REQUIRED";
     cachedR2Client = new S3Client({
       region: "auto",
       endpoint,
       credentials: { accessKeyId, secretAccessKey },
-      // Account-id host + path-style: https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<bucket>/<key>
+      // Path-style: https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<bucket>/<key>
       forcePathStyle: true,
-      // AWS SDK 3.729+ sends CRC32 checksums that R2 rejects (PutObject 501/400).
       requestChecksumCalculation: "WHEN_REQUIRED",
       responseChecksumValidation: "WHEN_REQUIRED",
     });
+    stripUnsupportedR2Checksums(cachedR2Client);
   }
   return { client: cachedR2Client, config: cachedR2Config };
 }
@@ -149,16 +208,21 @@ export async function r2PutObject(
 ): Promise<string> {
   const r2 = getR2();
   if (!r2) throw new Error("R2 is not configured");
-  await r2.client.send(
-    new PutObjectCommand({
-      Bucket: r2.config.bucket,
-      Key: r2KeyForFilename(filename),
-      Body: data,
-      ContentType: mimeType,
-      // Cache for 1 year — immutable because filenames are UUIDs
-      CacheControl: "public, max-age=31536000, immutable",
-    }),
-  );
+  try {
+    await r2.client.send(
+      new PutObjectCommand({
+        Bucket: r2.config.bucket,
+        Key: r2KeyForFilename(filename),
+        Body: data,
+        ContentType: mimeType === "image/jpg" ? "image/jpeg" : mimeType,
+        CacheControl: "public, max-age=31536000, immutable",
+      }),
+    );
+  } catch (error) {
+    const code = (error as { Code?: string; name?: string }).Code ?? (error as { name?: string }).name;
+    const message = error instanceof Error ? error.message : "Unknown R2 error";
+    throw new Error(`Could not store the photo in R2${code ? ` (${code})` : ""}: ${message}`);
+  }
   return r2PublicUrl(filename);
 }
 
@@ -208,12 +272,25 @@ export function getStorageLayout(storageRoot: string): StorageLayout {
   return { root, temp: path.resolve(root, ".tmp") };
 }
 
+const extensionByMime: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
+
 export function createStoredFilename(
   originalName: string,
   createID: () => string = randomUUID,
+  mimeType?: string,
 ): string {
-  const extension = path.extname(path.basename(originalName)).toLowerCase();
-  if (!allowedExtensions.has(extension)) throw new Error("Unsupported image extension");
+  const base = path.basename(originalName).toLowerCase();
+  const matched = [".jpeg", ".jpg", ".png", ".webp"].find((ext) => base.endsWith(ext));
+  const fromMime = mimeType ? extensionByMime[mimeType.toLowerCase()] : undefined;
+  const extension = matched === ".jpeg" ? ".jpg" : (matched ?? fromMime);
+  if (!extension || !allowedExtensions.has(extension)) {
+    throw new Error("Unsupported image extension");
+  }
   return `${createID()}${extension}`;
 }
 
@@ -231,11 +308,12 @@ export function resolveStoredFile(storageRoot: string, storageKey: string): stri
 }
 
 export function isAllowedImageSignature(bytes: Buffer, mimeType: string): boolean {
-  if (mimeType === "image/jpeg")
+  const normalized = mimeType === "image/jpg" ? "image/jpeg" : mimeType;
+  if (normalized === "image/jpeg")
     return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (mimeType === "image/png")
+  if (normalized === "image/png")
     return bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"));
-  if (mimeType === "image/webp") {
+  if (normalized === "image/webp") {
     return (
       bytes.subarray(0, 4).toString("ascii") === "RIFF" &&
       bytes.subarray(8, 12).toString("ascii") === "WEBP"
@@ -254,6 +332,7 @@ export async function validateUploadCandidate(
   if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.mimetype as AllowedImageMimeType)) {
     throw new Error("Only JPEG, PNG and WebP images are allowed");
   }
+  if (file.mimetype === "image/jpg") file.mimetype = "image/jpeg";
   const bytes = file.data?.length
     ? file.data.subarray(0, 12)
     : file.tempFilePath

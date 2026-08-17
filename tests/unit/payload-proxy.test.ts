@@ -37,6 +37,8 @@ describe("payloadCorsOrigins", () => {
     expect(payloadCorsOrigins("https://agomonirun.com", "https://agomoni-backend.onrender.com", "https://agomoni-backend.onrender.com")).toEqual([
       "https://agomonirun.com",
       "https://agomoni-backend.onrender.com",
+      "https://www.agomonirun.com",
+      "https://www.agomoni-backend.onrender.com",
     ])
   })
 })

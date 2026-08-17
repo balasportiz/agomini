@@ -9,15 +9,22 @@
 
 const API = "/api";
 
-type PayloadError = { error?: string; errors?: { message: string }[]; message?: string };
+type PayloadError = {
+  error?: string;
+  errors?: { message?: string; data?: { message?: string } }[];
+  message?: string;
+};
 
 function parseErrorText(text: string, fallback: string): string {
   try {
     const data = JSON.parse(text) as PayloadError;
-    return data.errors?.[0]?.message || data.error || data.message || fallback;
+    const nested = data.errors?.[0]?.data?.message;
+    const message = data.errors?.[0]?.message || nested || data.error || data.message;
+    if (typeof message === "string" && message.trim()) return message;
   } catch {
-    return fallback;
+    if (text && text.length < 400 && !text.trim().startsWith("<")) return text;
   }
+  return fallback;
 }
 
 async function parseError(response: Response, fallback: string): Promise<string> {

@@ -35,4 +35,9 @@ describe("parseServerEnv", () => {
   it("requires imgproxy signing material in production", () => {
     expect(() => parseServerEnv({ ...validEnv, NODE_ENV: "production" })).toThrow(/IMGPROXY_KEY.*IMGPROXY_SALT/)
   })
+
+  it("treats an empty S3_PUBLIC_URL as unset", () => {
+    const env = parseServerEnv({ ...validEnv, S3_PUBLIC_URL: "" })
+    expect(env.S3_PUBLIC_URL).toBeUndefined()
+  })
 })
