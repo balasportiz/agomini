@@ -31,8 +31,8 @@ RUN pnpm build
 FROM builder AS migration
 CMD ["pnpm", "migrate"]
 
-FROM node:22.17.0-bookworm-slim AS runner
-WORKDIR /app
+# Reuse `base` so corepack/pnpm exist at runtime (Render CMD runs `pnpm migrate`).
+FROM base AS runner
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
@@ -60,12 +60,17 @@ for (const name of names) {
   fs.symlinkSync(target, path.join(linkRoot, packageName), 'dir')
 }
 NODE
-# Copy pnpm + node_modules so `pnpm migrate` runs in the final image.
-# This adds ~200 MB but avoids a separate migration container on Railway.
+# Full node_modules so `pnpm migrate` (Payload CLI) can resolve deps at runtime.
+# This adds ~200 MB but avoids a separate migration container on Render/Railway.
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=deps --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=deps --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
-# Payload migration files must be present at runtime.
+# Payload CLI loads payload.config.ts + path aliases — keep the source it imports.
+COPY --from=builder --chown=nextjs:nodejs /app/payload.config.ts ./payload.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/collections ./collections
+COPY --from=builder --chown=nextjs:nodejs /app/globals ./globals
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
