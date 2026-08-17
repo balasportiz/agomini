@@ -23,6 +23,14 @@ export type StorageLayout = {
   temp: string;
 };
 
+export type UploadCandidate = {
+  data?: Buffer;
+  mimetype: string;
+  name: string;
+  size: number;
+  tempFilePath?: string;
+};
+
 export async function readUploadBuffer(file: UploadCandidate): Promise<Buffer> {
   if (file.data && file.data.length > 0) return file.data;
   if (file.tempFilePath) return readFile(file.tempFilePath);
