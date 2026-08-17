@@ -31,8 +31,9 @@ RUN pnpm build
 FROM builder AS migration
 CMD ["pnpm", "migrate"]
 
-# Reuse `base` so corepack/pnpm exist at runtime (Render CMD runs `pnpm migrate`).
-FROM base AS runner
+# Slim runtime image — no pnpm/corepack. Migrations call the Payload CLI via node.
+FROM node:22.17.0-bookworm-slim AS runner
+WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
@@ -60,7 +61,7 @@ for (const name of names) {
   fs.symlinkSync(target, path.join(linkRoot, packageName), 'dir')
 }
 NODE
-# Full node_modules so `pnpm migrate` (Payload CLI) can resolve deps at runtime.
+# Full node_modules so the Payload CLI can resolve deps at runtime.
 # This adds ~200 MB but avoids a separate migration container on Render/Railway.
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=deps --chown=nextjs:nodejs /app/package.json ./package.json
@@ -75,7 +76,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 EXPOSE ${PORT}
-# Run migrations first, then start the app.
-# On Render/Railway: this is the only container — migrations run automatically on every deploy.
-# On Docker Compose: the dedicated `migrate` service handles this instead (this CMD is not used).
-CMD ["sh", "-c", "pnpm migrate && node server.js"]
+# Avoid `pnpm migrate` here: corepack tries to write under /home/nextjs and fails (EACCES).
+# Call the Payload binary with node instead, then start the standalone server.
+# On Docker Compose: the dedicated `migrate` service handles migrations (this CMD is not used).
+CMD ["sh", "-c", "node ./node_modules/payload/bin.js migrate && node server.js"]
