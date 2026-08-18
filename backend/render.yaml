@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: agomoni-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    buildArgs:
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://agomonirun.com
+    healthCheckPath: /api/health
+    plan: free
+    autoDeploy: true

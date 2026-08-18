@@ -1,5 +1,12 @@
 # Deployment Guide
 
+Monorepo layout:
+
+| Folder | Platform | What runs |
+|--------|----------|-----------|
+| `frontend/` | **Vercel** | Public website + Studio UI (proxies `/api/*` to Render) |
+| `backend/` | **Render** | Payload CMS + REST API + photo storage |
+
 This project uses a split deployment:
 
 | Layer | Platform | Cost |
@@ -25,9 +32,8 @@ Render builds your `Dockerfile` and runs a single container:
 
 1. Go to [render.com](https://render.com) → New → Web Service
 2. Connect your GitHub account and select `balasportiz/agomini`
-3. Render detects `render.yaml` automatically — click **Apply**
-
-Or manually:
+3. Render detects `backend/render.yaml` when **Root Directory** is `backend` — or set manually:
+- **Root Directory:** `backend`
 - **Runtime:** Docker
 - **Dockerfile path:** `./Dockerfile`
 - **Branch:** `main`
