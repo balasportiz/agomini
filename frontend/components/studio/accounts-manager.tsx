@@ -129,7 +129,7 @@ export function AccountsManager({ initialAccounts, currentUserId }: { initialAcc
       </div>
 
       <p className="studio-hint" style={{ marginTop: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <UserCog size={14} /> You can't change your own role or remove yourself, and the last Super Admin can't be removed.
+        <UserCog size={14} /> You can&rsquo;t change your own role or remove yourself, and the last Super Admin can&rsquo;t be removed.
       </p>
 
       <Dialog open={creating} onOpenChange={setCreating}>
@@ -152,7 +152,7 @@ export function AccountsManager({ initialAccounts, currentUserId }: { initialAcc
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this account?</AlertDialogTitle>
-            <AlertDialogDescription>{deleteTarget?.email} will no longer be able to sign in. This can't be undone.</AlertDialogDescription>
+            <AlertDialogDescription>{deleteTarget?.email} will no longer be able to sign in. This can&rsquo;t be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep it</AlertDialogCancel>

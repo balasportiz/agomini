@@ -242,7 +242,7 @@ export function CollectionEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this {singular.toLowerCase()}?</AlertDialogTitle>
             <AlertDialogDescription>
-              “{deleteTarget ? str(deleteTarget[titleField]) : ""}” will be permanently removed from the site. This can't be undone.
+              &ldquo;{deleteTarget ? str(deleteTarget[titleField]) : ""}&rdquo; will be permanently removed from the site. This can&rsquo;t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

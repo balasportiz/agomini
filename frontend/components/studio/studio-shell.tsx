@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ExternalLink,
   Flag,
@@ -66,12 +66,12 @@ export function StudioShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const open = openPath === pathname;
 
-  // Close the mobile drawer whenever the route changes.
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  function setOpen(next: boolean) {
+    setOpenPath(next ? pathname : null);
+  }
 
   const activeItem = nav
     .flatMap((group) => group.items)
@@ -141,7 +141,7 @@ export function StudioShell({
             className="studio-menu-toggle"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setOpen(!open)}
           >
             {open ? <X size={18} /> : <MenuIcon size={18} />}
           </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 /**
@@ -11,9 +11,10 @@ import { toast } from "sonner";
 export function useStudioForm<T extends Record<string, unknown>>(initial: T) {
   const [values, setValues] = useState<T>(initial);
   const [saving, setSaving] = useState(false);
-  const savedSnapshot = useRef(JSON.stringify(initial));
+  const [savedJson, setSavedJson] = useState(() => JSON.stringify(initial));
+  const draftJson = JSON.stringify(values);
 
-  const dirty = useMemo(() => JSON.stringify(values) !== savedSnapshot.current, [values]);
+  const dirty = useMemo(() => draftJson !== savedJson, [draftJson, savedJson]);
 
   const setValue = useCallback(<K extends keyof T>(key: K, value: T[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -28,9 +29,7 @@ export function useStudioForm<T extends Record<string, unknown>>(initial: T) {
       setSaving(true);
       try {
         await persist(values);
-        savedSnapshot.current = JSON.stringify(values);
-        // Force a re-render so `dirty` recomputes to false.
-        setValues((prev) => ({ ...prev }));
+        setSavedJson(JSON.stringify(values));
         toast.success(successMessage);
         return true;
       } catch (error) {

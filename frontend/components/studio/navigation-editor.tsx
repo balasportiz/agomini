@@ -44,7 +44,7 @@ export function NavigationEditor({ initial }: { initial: Values }) {
     <div className="studio-content__inner">
       <div className="studio-page-head">
         <h2>Menus &amp; links</h2>
-        <p>Control the links in your site's top menu and footer. Empty rows are ignored when you save.</p>
+        <p>Control the links in your site&rsquo;s top menu and footer. Empty rows are ignored when you save.</p>
       </div>
 
       <div className="studio-help-note">
