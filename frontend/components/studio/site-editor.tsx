@@ -350,6 +350,7 @@ export function SiteEditor({
           <div className="studio-card">
             <div className="studio-card__head"><h3>Gallery introduction</h3></div>
             <div className="studio-card__body">
+              <p className="studio-hint">Shown on the homepage only when no event edition is selected in Galleries. When an edition is set, its name and description are used instead.</p>
               <Field label="Gallery title"><Input value={values.galleryTitle} onChange={(e) => setValue("galleryTitle", e.target.value)} /></Field>
               <Field label="Gallery description"><Textarea rows={2} value={values.galleryDescription} onChange={(e) => setValue("galleryDescription", e.target.value)} /></Field>
             </div>

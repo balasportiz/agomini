@@ -11,7 +11,7 @@ import { loadPublicSiteData } from "@/lib/site-data";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { settings, categories, logistics, photos } = await loadPublicSiteData();
+  const { settings, categories, logistics, photos, homepageEdition } = await loadPublicSiteData();
   const eventJsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "SportsEvent",
@@ -33,7 +33,7 @@ export default async function HomePage() {
       <EventLogistics entries={logistics} timezone={settings.timezone} />
       <StorySections settings={settings} />
       <HighlightsSection highlights={settings.highlights} />
-      <GalleryPreview photos={photos.slice(0, 8)} settings={settings} />
+      <GalleryPreview photos={photos.slice(0, 8)} settings={settings} edition={homepageEdition} />
       <PartnersContact settings={settings} />
       <FaqSection faqs={settings.faqs} />
     </main>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { PublicPhoto, PublicSettings } from "@/lib/site-data";
+import type { PublicEdition, PublicPhoto, PublicSettings } from "@/lib/site-data";
 
 function photoOrientation(photo: PublicPhoto): "portrait" | "landscape" | "square" {
   if (!photo.width || !photo.height) return "portrait";
@@ -10,11 +10,21 @@ function photoOrientation(photo: PublicPhoto): "portrait" | "landscape" | "squar
   return "square";
 }
 
-export function GalleryPreview({ photos, settings }: { photos: PublicPhoto[]; settings: PublicSettings }) {
+export function GalleryPreview({
+  photos,
+  settings,
+  edition,
+}: {
+  photos: PublicPhoto[];
+  settings: PublicSettings;
+  edition?: PublicEdition | null;
+}) {
+  const title = edition?.name || settings.galleryTitle;
+  const description = edition?.galleryDescription || settings.galleryDescription;
   return (
     <section id="gallery" className="section section--ivory gallery-preview">
       <div className="gallery-heading">
-        <div><h2>{settings.galleryTitle}</h2><p>{settings.galleryDescription}</p></div>
+        <div><h2>{title}</h2><p>{description}</p></div>
         <Link href="/gallery" className="text-link">View full gallery <span aria-hidden="true">↗</span></Link>
       </div>
       {photos.length ? (

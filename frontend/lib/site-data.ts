@@ -284,9 +284,16 @@ async function fetchPublicSiteDataFromApi() {
     .filter((e) => e.id && e.name && e.slug);
 
   const featuredEditionId = relationshipId(settingsRaw.featuredGalleryEdition);
+  const featuredEdition = publicEditions.find((e) => e.id === featuredEditionId);
+  const firstEditionWithPhotos = publicEditions.find((e) => e.photos.length > 0);
+  // The homepage block must always present the edition its photos came from,
+  // so the heading never contradicts the pictures (e.g. 1.0 photos under a
+  // 2.0 title). A featured edition with no photos yet still lends its name so
+  // the empty state matches the admin's choice.
   const homepageEdition =
-    publicEditions.find((e) => e.id === featuredEditionId && e.photos.length > 0) ??
-    publicEditions.find((e) => e.photos.length > 0);
+    (featuredEdition && featuredEdition.photos.length > 0 ? featuredEdition : firstEditionWithPhotos) ??
+    featuredEdition ??
+    null;
   const publicPhotos = homepageEdition?.photos ?? [];
 
   // --- highlights ---
@@ -387,6 +394,7 @@ async function fetchPublicSiteDataFromApi() {
     logistics: publicLogistics,
     editions: publicEditions,
     photos: publicPhotos,
+    homepageEdition,
     databaseAvailable: true,
   };
 }
@@ -409,6 +417,7 @@ export const loadPublicSiteData = cache(async () => {
     logistics: [] as PublicEventLogistic[],
     editions: [] as PublicEdition[],
     photos: [] as PublicPhoto[],
+    homepageEdition: null as PublicEdition | null,
     databaseAvailable: false,
   };
 });
