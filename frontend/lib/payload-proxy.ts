@@ -12,6 +12,14 @@ export function rewriteSetCookieForProxy(value: string): string {
   return value.replace(/;\s*domain=[^;]*/gi, "")
 }
 
+function getSetCookieHeaders(headers: Headers): string[] {
+  if (typeof headers.getSetCookie === "function") {
+    return headers.getSetCookie()
+  }
+  const single = headers.get("set-cookie")
+  return single ? [single] : []
+}
+
 export async function proxyPayloadRequest(request: Request): Promise<Response> {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "")
   if (!base) {
@@ -37,7 +45,7 @@ export async function proxyPayloadRequest(request: Request): Promise<Response> {
     if (HOP_BY_HOP.has(key.toLowerCase()) || key.toLowerCase() === "set-cookie") return
     responseHeaders.set(key, value)
   })
-  const cookies = typeof upstream.headers.getSetCookie === "function" ? upstream.headers.getSetCookie() : []
+  const cookies = getSetCookieHeaders(upstream.headers)
   for (const cookie of cookies) {
     responseHeaders.append("set-cookie", rewriteSetCookieForProxy(cookie))
   }

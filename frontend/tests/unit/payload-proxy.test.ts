@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { rewriteSetCookieForProxy, shouldProxyPayloadApi } from "@/lib/payload-proxy"
+import { proxyPayloadRequest, rewriteSetCookieForProxy, shouldProxyPayloadApi } from "@/lib/payload-proxy"
 
 describe("shouldProxyPayloadApi", () => {
   it("is on whenever the backend API URL is configured", () => {
@@ -21,5 +21,31 @@ describe("rewriteSetCookieForProxy", () => {
     expect(
       rewriteSetCookieForProxy("payload-token=abc; Path=/; Domain=agomoni-backend.onrender.com; HttpOnly; Secure; SameSite=Lax"),
     ).toBe("payload-token=abc; Path=/; HttpOnly; Secure; SameSite=Lax")
+  })
+})
+
+describe("proxyPayloadRequest", () => {
+  it("forwards set-cookie even when getSetCookie is unavailable", async () => {
+    const previousApi = process.env.NEXT_PUBLIC_API_URL
+    const previousFetch = global.fetch
+    try {
+      process.env.NEXT_PUBLIC_API_URL = "https://agomini.onrender.com"
+      global.fetch = async () =>
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "set-cookie": "payload-token=abc; Path=/; Domain=agomini.onrender.com; HttpOnly; Secure; SameSite=Lax",
+          },
+        }) as typeof fetch
+
+      const response = await proxyPayloadRequest(new Request("https://agomini.vercel.app/api/users/login", { method: "POST", body: "{}" }))
+
+      expect(response.headers.get("set-cookie")).toBe("payload-token=abc; Path=/; HttpOnly; Secure; SameSite=Lax")
+    } finally {
+      global.fetch = previousFetch
+      if (previousApi === undefined) delete process.env.NEXT_PUBLIC_API_URL
+      else process.env.NEXT_PUBLIC_API_URL = previousApi
+    }
   })
 })
