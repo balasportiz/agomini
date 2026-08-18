@@ -48,4 +48,37 @@ describe("proxyPayloadRequest", () => {
       else process.env.NEXT_PUBLIC_API_URL = previousApi
     }
   })
+
+  it("does not forward browser origin headers to the backend", async () => {
+    const previousApi = process.env.NEXT_PUBLIC_API_URL
+    const previousFetch = global.fetch
+    try {
+      process.env.NEXT_PUBLIC_API_URL = "https://agomini.onrender.com"
+      let forwardedHeaders: Headers | undefined
+      global.fetch = (async (_input, init) => {
+        forwardedHeaders = init?.headers as Headers
+        return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } })
+      }) as typeof fetch
+
+      await proxyPayloadRequest(
+        new Request("https://agomini.vercel.app/api/users/login", {
+          method: "POST",
+          headers: {
+            origin: "https://agomini.vercel.app",
+            referer: "https://agomini.vercel.app/studio/login",
+            "content-type": "application/json",
+          },
+          body: "{}",
+        }),
+      )
+
+      expect(forwardedHeaders?.get("origin")).toBeNull()
+      expect(forwardedHeaders?.get("referer")).toBeNull()
+      expect(forwardedHeaders?.get("content-type")).toBe("application/json")
+    } finally {
+      global.fetch = previousFetch
+      if (previousApi === undefined) delete process.env.NEXT_PUBLIC_API_URL
+      else process.env.NEXT_PUBLIC_API_URL = previousApi
+    }
+  })
 })

@@ -1,6 +1,6 @@
 const HOP_BY_HOP = new Set(["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade", "content-encoding", "content-length", "host"])
 
-const FORWARD_REQUEST_HEADERS = new Set(["accept", "authorization", "content-type", "cookie", "origin", "referer", "x-payload-csrf"])
+const FORWARD_REQUEST_HEADERS = new Set(["accept", "authorization", "content-type", "cookie", "x-payload-csrf"])
 
 /** Proxy Payload REST from the Vercel/local frontend to the Render backend. */
 export function shouldProxyPayloadApi(): boolean {
