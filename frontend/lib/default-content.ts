@@ -16,8 +16,8 @@ export const defaultSiteSettings = {
   showResultsCta: false,
   about: "Agomoni Run brings runners and the local community together in Barasat, combining the energy of road running with Bengal’s Agomoni spirit. This year, in step with World Heart Day, every stride celebrates movement, wellbeing and the shared promise to keep our hearts healthy and strong.",
   announcement: { enabled: false },
-  galleryTitle: "Agomoni Run 1.0",
-  galleryDescription: "Moments of movement, solidarity and celebration from the previous edition.",
+  galleryTitle: "The Agomoni Run gallery",
+  galleryDescription: "Moments of movement, solidarity and celebration from our community and past editions.",
   heroManifesto: {
     bengaliWord: "একসাথে",
     line1: "Run for a healthy heart.",
