@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { parseServerEnv } from "@/lib/env"
 
 const validEnv = {
@@ -34,6 +34,15 @@ describe("parseServerEnv", () => {
 
   it("requires imgproxy signing material in production", () => {
     expect(() => parseServerEnv({ ...validEnv, NODE_ENV: "production" })).toThrow(/IMGPROXY_KEY.*IMGPROXY_SALT/)
+  })
+
+  it("skips the imgproxy requirement during the Next.js build phase", async () => {
+    vi.stubEnv("NEXT_PHASE", "phase-production-build")
+    vi.resetModules()
+    const { parseServerEnv: parseDuringBuild } = await import("@/lib/env")
+    expect(() => parseDuringBuild({ ...validEnv, NODE_ENV: "production" })).not.toThrow()
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 
   it("treats an empty S3_PUBLIC_URL as unset", () => {

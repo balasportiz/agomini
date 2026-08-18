@@ -39,6 +39,10 @@ export type FrontendEnv = z.infer<typeof frontendEnvSchema>;
 // Backend env — validated only on the VPS (payload.config.ts, API routes).
 // Never imported by components or lib/site-data on Vercel.
 // ---------------------------------------------------------------------------
+// `next build` only needs config to load for route registration — runtime-only
+// requirements (R2/imgproxy) must not fail the Docker build stage.
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
 const backendEnvSchema = frontendEnvSchema.extend({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   PAYLOAD_SECRET: z.string().min(32, "PAYLOAD_SECRET must be at least 32 characters"),
@@ -67,7 +71,7 @@ const backendEnvSchema = frontendEnvSchema.extend({
     z.string().url().optional(),
   ),
 }).superRefine((env, context) => {
-  if (env.NODE_ENV !== "production") return;
+  if (env.NODE_ENV !== "production" || isBuildPhase) return;
   const r2Active = Boolean(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.S3_PUBLIC_URL);
   // When R2 is the storage backend, imgproxy signing is optional because
   // images are served directly from the R2 public URL.
