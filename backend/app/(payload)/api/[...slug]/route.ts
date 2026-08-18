@@ -1,27 +1,19 @@
+import config from "@payload-config";
+import {
+  REST_DELETE,
+  REST_GET,
+  REST_OPTIONS,
+  REST_PATCH,
+  REST_POST,
+  REST_PUT,
+} from "@payloadcms/next/routes";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type RouteContext = { params: Promise<{ slug?: string[] }> };
-
-async function dispatch(request: Request, context: RouteContext, method: "GET" | "POST" | "DELETE" | "PATCH" | "PUT" | "OPTIONS") {
-  const [{ default: config }, routes] = await Promise.all([
-    import("@payload-config"),
-    import("@payloadcms/next/routes"),
-  ]);
-  const handler = {
-    GET: routes.REST_GET,
-    POST: routes.REST_POST,
-    DELETE: routes.REST_DELETE,
-    PATCH: routes.REST_PATCH,
-    PUT: routes.REST_PUT,
-    OPTIONS: routes.REST_OPTIONS,
-  }[method](config);
-  return handler(request, context);
-}
-
-export const GET = (request: Request, context: RouteContext) => dispatch(request, context, "GET");
-export const POST = (request: Request, context: RouteContext) => dispatch(request, context, "POST");
-export const DELETE = (request: Request, context: RouteContext) => dispatch(request, context, "DELETE");
-export const PATCH = (request: Request, context: RouteContext) => dispatch(request, context, "PATCH");
-export const PUT = (request: Request, context: RouteContext) => dispatch(request, context, "PUT");
-export const OPTIONS = (request: Request, context: RouteContext) => dispatch(request, context, "OPTIONS");
+export const GET = REST_GET(config);
+export const POST = REST_POST(config);
+export const DELETE = REST_DELETE(config);
+export const PATCH = REST_PATCH(config);
+export const PUT = REST_PUT(config);
+export const OPTIONS = REST_OPTIONS(config);

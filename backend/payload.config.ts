@@ -38,7 +38,12 @@ export default buildConfig({
   globals: [SiteSettings, Navigation],
   editor: lexicalEditor(),
   secret: env.PAYLOAD_SECRET,
-  serverURL: env.NEXT_PUBLIC_SITE_URL,
+  serverURL:
+    env.NEXT_PUBLIC_API_URL ??
+    process.env.RENDER_EXTERNAL_URL ??
+    (process.env.RENDER_EXTERNAL_HOSTNAME
+      ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}`
+      : env.NEXT_PUBLIC_SITE_URL),
   cors: payloadCorsOrigins(
     env.NEXT_PUBLIC_SITE_URL,
     env.NEXT_PUBLIC_API_URL,
@@ -76,6 +81,12 @@ export default buildConfig({
   telemetry: false,
   onInit: async (payload) => {
     await mkdir(uploadTempDir, { recursive: true });
-    await initializeDefaultContent(payload);
+    // Bootstrap seeding must never abort Payload init — if it throws, every
+    // REST route would respond 500 and the Studio panels would render empty.
+    try {
+      await initializeDefaultContent(payload);
+    } catch (error) {
+      payload.logger.error({ err: error }, "initializeDefaultContent failed");
+    }
   },
 });
