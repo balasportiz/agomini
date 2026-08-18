@@ -1,5 +1,6 @@
-const HOP_BY_HOP = new Set(["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade", "content-encoding", "content-length", "host"])
+import { payloadTokenFromCookie } from "@/lib/api-base"
 
+const HOP_BY_HOP = new Set(["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade", "content-encoding", "content-length", "host"])
 const FORWARD_REQUEST_HEADERS = new Set(["accept", "authorization", "content-type", "cookie", "x-payload-csrf"])
 
 /** Proxy Payload REST from the Vercel/local frontend to the Render backend. */
@@ -42,6 +43,10 @@ export async function proxyPayloadRequest(request: Request): Promise<Response> {
   const headers = new Headers()
   for (const [key, value] of request.headers.entries()) {
     if (FORWARD_REQUEST_HEADERS.has(key.toLowerCase())) headers.set(key, value)
+  }
+  const token = payloadTokenFromCookie(headers.get("cookie") ?? "")
+  if (token && !headers.has("authorization")) {
+    headers.set("authorization", `JWT ${token}`)
   }
 
   const method = request.method.toUpperCase()

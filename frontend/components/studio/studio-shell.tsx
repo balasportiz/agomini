@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PreviewDrawer } from "@/components/studio/preview-drawer";
+import { ChangePasswordButton } from "@/components/studio/change-password-button";
 import type { StudioNavGroup } from "@/lib/studio-nav";
 
 const ICONS: Record<string, typeof Flag> = {
@@ -163,6 +164,7 @@ export function StudioShell({
               </span>
               <span className="studio-user__avatar" aria-hidden="true">{initials}</span>
             </div>
+            <ChangePasswordButton />
             <Button variant="ghost" size="icon-sm" onClick={handleLogout} aria-label="Sign out" title="Sign out">
               <LogOut />
             </Button>

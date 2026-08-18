@@ -82,6 +82,36 @@ describe("proxyPayloadRequest", () => {
     }
   })
 
+  it("adds Authorization JWT from the session cookie for backend writes", async () => {
+    const previousApi = process.env.NEXT_PUBLIC_API_URL
+    const previousFetch = global.fetch
+    try {
+      process.env.NEXT_PUBLIC_API_URL = "https://agomoni.onrender.com"
+      let forwardedHeaders: Headers | undefined
+      global.fetch = (async (_input, init) => {
+        forwardedHeaders = init?.headers as Headers
+        return new Response(JSON.stringify({ doc: { id: "1" } }), { status: 201, headers: { "content-type": "application/json" } })
+      }) as typeof global.fetch
+
+      await proxyPayloadRequest(
+        new Request("https://agomini.vercel.app/api/users", {
+          method: "POST",
+          headers: {
+            cookie: "payload-token=session-token",
+            "content-type": "application/json",
+          },
+          body: "{}",
+        }),
+      )
+
+      expect(forwardedHeaders?.get("authorization")).toBe("JWT session-token")
+    } finally {
+      global.fetch = previousFetch
+      if (previousApi === undefined) delete process.env.NEXT_PUBLIC_API_URL
+      else process.env.NEXT_PUBLIC_API_URL = previousApi
+    }
+  })
+
   it("sets a host cookie from the login token when upstream omits set-cookie", async () => {
     const previousApi = process.env.NEXT_PUBLIC_API_URL
     const previousFetch = global.fetch

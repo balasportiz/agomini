@@ -53,6 +53,16 @@ export async function createDoc(collection: string, data: Record<string, unknown
   return { id: String(result?.doc?.id ?? result?.id ?? "") };
 }
 
+export async function changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  const response = await fetch(`${API}/users/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!response.ok) throw new Error(await parseError(response, "Could not update your password."));
+}
+
 export async function updateDoc(collection: string, id: string, data: Record<string, unknown>): Promise<void> {
   const response = await fetch(`${API}/${collection}/${id}`, {
     method: "PATCH",
