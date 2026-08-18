@@ -7,9 +7,20 @@ export function shouldProxyPayloadApi(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_API_URL);
 }
 
-/** Host-only cookie so the browser stores it on agomonirun.com, not onrender.com. */
+/** Host-only cookie so the browser stores it on the frontend host, not onrender.com. */
 export function rewriteSetCookieForProxy(value: string): string {
-  return value.replace(/;\s*domain=[^;]*/gi, "")
+  let cookie = value.replace(/;\s*domain=[^;]*/gi, "")
+  cookie = /;\s*path=/i.test(cookie)
+    ? cookie.replace(/;\s*path=[^;]*/gi, "; Path=/")
+    : `${cookie}; Path=/`
+  cookie = cookie.replace(/;\s*samesite=[^;]*/gi, "")
+  cookie = `${cookie}; SameSite=Lax`
+  if (!/;\s*secure/i.test(cookie)) cookie = `${cookie}; Secure`
+  return cookie
+}
+
+export function payloadSessionCookie(token: string): string {
+  return rewriteSetCookieForProxy(`payload-token=${token}; HttpOnly`)
 }
 
 function getSetCookieHeaders(headers: Headers): string[] {
@@ -46,6 +57,18 @@ export async function proxyPayloadRequest(request: Request): Promise<Response> {
     responseHeaders.set(key, value)
   })
   const cookies = getSetCookieHeaders(upstream.headers)
+  const pathname = incoming.pathname.replace(/\/$/, "")
+  if (pathname.endsWith("/users/login") && cookies.length === 0) {
+    try {
+      const cloned = upstream.clone()
+      const data = (await cloned.json()) as { token?: unknown }
+      if (typeof data.token === "string" && data.token) {
+        cookies.push(payloadSessionCookie(data.token))
+      }
+    } catch {
+      // Login body was not JSON; keep the upstream cookies as-is.
+    }
+  }
   for (const cookie of cookies) {
     responseHeaders.append("set-cookie", rewriteSetCookieForProxy(cookie))
   }

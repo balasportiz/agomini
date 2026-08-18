@@ -8,7 +8,7 @@
  * so Payload's role-based access is enforced server-side.
  */
 import { headers as nextHeaders } from "next/headers";
-import { getServerApiBase } from "@/lib/api-base";
+import { getServerApiBase, payloadAuthHeaders } from "@/lib/api-base";
 import { buildStudioImageUrl } from "@/lib/image-url";
 import { payloadListQuery } from "@/lib/payload-query";
 
@@ -29,7 +29,7 @@ async function apiGet<T>(path: string, cookieHeader?: string): Promise<T | null>
     const url = `${getApiBase()}${path}`;
     const res = await fetch(url, {
       cache: "no-store",
-      headers: cookieHeader ? { Cookie: cookieHeader } : {},
+      headers: payloadAuthHeaders(cookieHeader),
     });
     if (!res.ok) return null;
     return (await res.json()) as T;

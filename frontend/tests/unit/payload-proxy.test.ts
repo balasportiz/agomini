@@ -81,4 +81,30 @@ describe("proxyPayloadRequest", () => {
       else process.env.NEXT_PUBLIC_API_URL = previousApi
     }
   })
+
+  it("sets a host cookie from the login token when upstream omits set-cookie", async () => {
+    const previousApi = process.env.NEXT_PUBLIC_API_URL
+    const previousFetch = global.fetch
+    try {
+      process.env.NEXT_PUBLIC_API_URL = "https://agomoni.onrender.com"
+      global.fetch = (async () =>
+        new Response(JSON.stringify({ token: "login-token", user: { id: "1" } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        })) as typeof fetch
+
+      const response = await proxyPayloadRequest(
+        new Request("https://agomini.vercel.app/api/users/login", { method: "POST", body: "{}" }),
+      )
+
+      expect(response.headers.get("set-cookie")).toContain("payload-token=login-token")
+      expect(response.headers.get("set-cookie")).toContain("Path=/")
+      expect(response.headers.get("set-cookie")).toContain("HttpOnly")
+      expect(response.headers.get("set-cookie")).toContain("SameSite=Lax")
+    } finally {
+      global.fetch = previousFetch
+      if (previousApi === undefined) delete process.env.NEXT_PUBLIC_API_URL
+      else process.env.NEXT_PUBLIC_API_URL = previousApi
+    }
+  })
 })

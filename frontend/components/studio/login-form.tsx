@@ -6,10 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+function safeStudioRedirect(value: string | null): string {
+  if (!value || !value.startsWith("/studio") || value.startsWith("//") || value.includes("\\")) {
+    return "/studio";
+  }
+  return value;
+}
+
 export function StudioLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/studio";
+  const redirectTo = safeStudioRedirect(searchParams.get("redirect"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

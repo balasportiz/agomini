@@ -1,7 +1,7 @@
 import { headers as nextHeaders } from "next/headers";
 import { redirect } from "next/navigation";
 import { isEditorOrAbove, isMediaManagerOrAbove, isSuperAdmin } from "@/lib/roles";
-import { getServerApiBase } from "@/lib/api-base";
+import { getServerApiBase, payloadAuthHeaders } from "@/lib/api-base";
 
 export type StudioUser = {
   id: string;
@@ -17,7 +17,7 @@ export async function getStudioUser(): Promise<StudioUser | null> {
     const url = `${getServerApiBase()}/api/users/me`;
     const res = await fetch(url, {
       cache: "no-store",
-      headers: { Cookie: cookieHeader },
+      headers: payloadAuthHeaders(cookieHeader),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { user?: StudioUser | null };

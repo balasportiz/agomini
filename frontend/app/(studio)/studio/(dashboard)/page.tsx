@@ -14,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { getStudioCapabilities, requireStudioUser } from "@/lib/studio-auth";
-import { getServerApiBase } from "@/lib/api-base";
+import { getServerApiBase, payloadAuthHeaders } from "@/lib/api-base";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ async function safeCount(collection: string, cookieHeader: string, where?: strin
   try {
     const whereParam = where ? `&${where}` : "";
     const url = `${getApiBase()}/api/${encodeURIComponent(collection)}?limit=0${whereParam}`;
-    const res = await fetch(url, { cache: "no-store", headers: { Cookie: cookieHeader } });
+    const res = await fetch(url, { cache: "no-store", headers: payloadAuthHeaders(cookieHeader) });
     if (!res.ok) return 0;
     const data = (await res.json()) as { totalDocs?: number };
     return data.totalDocs ?? 0;

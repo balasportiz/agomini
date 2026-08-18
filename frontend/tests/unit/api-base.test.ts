@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { getPublicApiBase, getServerApiBase } from "@/lib/api-base"
+import { getPublicApiBase, getServerApiBase, payloadAuthHeaders, payloadTokenFromCookie } from "@/lib/api-base"
 
 describe("getServerApiBase", () => {
   it("uses NEXT_PUBLIC_API_URL for server-side Payload REST calls", () => {
@@ -28,5 +28,20 @@ describe("getPublicApiBase", () => {
       if (previousSite === undefined) delete process.env.NEXT_PUBLIC_SITE_URL
       else process.env.NEXT_PUBLIC_SITE_URL = previousSite
     }
+  })
+})
+
+describe("payloadTokenFromCookie", () => {
+  it("reads the Payload session token from the cookie header", () => {
+    expect(payloadTokenFromCookie("theme=dark; payload-token=abc123; other=1")).toBe("abc123")
+  })
+})
+
+describe("payloadAuthHeaders", () => {
+  it("sends the session as Authorization JWT so cross-origin server fetches keep the login", () => {
+    expect(payloadAuthHeaders("payload-token=abc123")).toEqual({
+      Cookie: "payload-token=abc123",
+      Authorization: "JWT abc123",
+    })
   })
 })
