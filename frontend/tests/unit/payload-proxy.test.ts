@@ -37,7 +37,7 @@ describe("proxyPayloadRequest", () => {
             "content-type": "application/json",
             "set-cookie": "payload-token=abc; Path=/; Domain=agomini.onrender.com; HttpOnly; Secure; SameSite=Lax",
           },
-        }) as typeof fetch
+        })
 
       const response = await proxyPayloadRequest(new Request("https://agomini.vercel.app/api/users/login", { method: "POST", body: "{}" }))
 
@@ -58,7 +58,7 @@ describe("proxyPayloadRequest", () => {
       global.fetch = (async (_input, init) => {
         forwardedHeaders = init?.headers as Headers
         return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } })
-      }) as typeof fetch
+      }) as typeof global.fetch
 
       await proxyPayloadRequest(
         new Request("https://agomini.vercel.app/api/users/login", {
@@ -87,11 +87,11 @@ describe("proxyPayloadRequest", () => {
     const previousFetch = global.fetch
     try {
       process.env.NEXT_PUBLIC_API_URL = "https://agomoni.onrender.com"
-      global.fetch = (async () =>
+      global.fetch = async () =>
         new Response(JSON.stringify({ token: "login-token", user: { id: "1" } }), {
           status: 200,
           headers: { "content-type": "application/json" },
-        })) as typeof fetch
+        })
 
       const response = await proxyPayloadRequest(
         new Request("https://agomini.vercel.app/api/users/login", { method: "POST", body: "{}" }),

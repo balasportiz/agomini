@@ -7,7 +7,7 @@ export function getServerApiBase(): string {
   return raw.replace(/\/$/, "");
 }
 
-export function payloadTokenFromCookie(cookieHeader: string): string | null {
+export function payloadTokenFromCookie(cookieHeader: string = ""): string | null {
   const match = cookieHeader.match(/(?:^|;\s*)(?:payload-token|__Host-payload-token)=([^;]+)/i);
   if (!match?.[1]) return null;
   try {
@@ -21,10 +21,11 @@ export function payloadTokenFromCookie(cookieHeader: string): string | null {
  * Next.js/undici can strip Cookie on cross-origin server fetches.
  * Payload accepts the same session as Authorization: JWT <token>.
  */
-export function payloadAuthHeaders(cookieHeader: string): HeadersInit {
+export function payloadAuthHeaders(cookieHeader?: string): HeadersInit {
+  const cookie = cookieHeader ?? "";
   const headers: Record<string, string> = {};
-  if (cookieHeader) headers.Cookie = cookieHeader;
-  const token = payloadTokenFromCookie(cookieHeader);
+  if (cookie) headers.Cookie = cookie;
+  const token = payloadTokenFromCookie(cookie);
   if (token) headers.Authorization = `JWT ${token}`;
   return headers;
 }
