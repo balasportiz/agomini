@@ -40,4 +40,16 @@ describe("parseServerEnv", () => {
     const env = parseServerEnv({ ...validEnv, S3_PUBLIC_URL: "" })
     expect(env.S3_PUBLIC_URL).toBeUndefined()
   })
+
+  it("parses extra allowed frontend origins as a comma-separated list", () => {
+    const env = parseServerEnv({
+      ...validEnv,
+      FRONTEND_ALLOWED_ORIGINS: "https://agomonirun.com, https://agomini.vercel.app",
+    })
+
+    expect(env.FRONTEND_ALLOWED_ORIGINS).toEqual([
+      "https://agomonirun.com",
+      "https://agomini.vercel.app",
+    ])
+  })
 })

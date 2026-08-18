@@ -7,6 +7,17 @@ const siteOrigin = z.string().url().superRefine((value, context) => {
   }
 });
 
+const optionalOriginList = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return [];
+    return value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  },
+  z.array(siteOrigin).default([]),
+);
+
 // ---------------------------------------------------------------------------
 // Frontend env — validated on both Vercel and the VPS app process.
 // Only contains vars that the public site and Studio UI actually need.
@@ -32,6 +43,7 @@ const backendEnvSchema = frontendEnvSchema.extend({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   PAYLOAD_SECRET: z.string().min(32, "PAYLOAD_SECRET must be at least 32 characters"),
   APP_INTERNAL_URL: z.string().url().default("http://localhost:3000"),
+  FRONTEND_ALLOWED_ORIGINS: optionalOriginList,
   STORAGE_ROOT: z.string().min(1).default("./storage/photos"),
   UPLOAD_MAX_BYTES: z.coerce.number().int().positive().default(15_728_640),
   STORAGE_RESERVE_BYTES: z.coerce.number().int().positive().default(10_737_418_240),

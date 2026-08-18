@@ -42,12 +42,14 @@ export default buildConfig({
   cors: payloadCorsOrigins(
     env.NEXT_PUBLIC_SITE_URL,
     env.NEXT_PUBLIC_API_URL,
+    ...env.FRONTEND_ALLOWED_ORIGINS,
     process.env.RENDER_EXTERNAL_URL,
     process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : undefined,
   ),
   csrf: payloadCorsOrigins(
     env.NEXT_PUBLIC_SITE_URL,
     env.NEXT_PUBLIC_API_URL,
+    ...env.FRONTEND_ALLOWED_ORIGINS,
     process.env.RENDER_EXTERNAL_URL,
     process.env.RENDER_EXTERNAL_HOSTNAME ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME}` : undefined,
   ),
