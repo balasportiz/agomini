@@ -39,7 +39,7 @@ export function SiteFooter({ settings, links }: { settings: PublicSettings; link
       <div className="footer-main">
         <div className="footer-brand">
           <strong>AGOMONI</strong><span>RUN 2.0</span>
-          <p>Official website of Agomoni Run. {settings.organiserDescription}</p>
+          <p>{settings.organiserDescription}</p>
         </div>
         <div className="footer-group footer-event">
           <h3>Event</h3><strong>{eventDate}</strong><p>{settings.venue}</p>

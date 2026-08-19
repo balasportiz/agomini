@@ -71,6 +71,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--ink); }
 body { margin: 0; overflow-x: clip; background: var(--ivory); color: var(--ink); font-family: var(--font-body), Arial, sans-serif; font-size: 1rem; line-height: 1.55; text-rendering: optimizeLegibility; }
+.seo-background { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; opacity: 0; pointer-events: none; user-select: none; }
 .skip-link { position: absolute; z-index: 100; left: 1rem; top: 0; transform: translateY(-120%); padding: 0.55rem 0.9rem; background: var(--vermilion); color: var(--white); font-size: 0.85rem; font-weight: 700; }
 .skip-link:focus { transform: translateY(0.75rem); }
 body, button, a { -webkit-font-smoothing: antialiased; }
@@ -136,7 +137,6 @@ p { text-wrap: pretty; }
 .hero-copy { position: relative; z-index: 2; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 7.5rem var(--page-gutter) 4.5rem; transform: translateY(calc(var(--hero-progress) * -3rem)); opacity: clamp(0, calc(1 - (var(--hero-progress) * 2.1)), 1); will-change: transform, opacity; }
 .hero-scroll[data-hero-phase="manifesto"] .hero-copy { pointer-events: none; }
 .hero-organiser { margin-bottom: clamp(1.25rem, 3vh, 2.5rem); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.hero-kicker { margin: 0.85rem 0 0; color: oklch(0.92 0.02 28); font-size: 0.82rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .hero-lockup { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; width: 100%; margin: 0; font-family: var(--font-display), Impact, sans-serif; font-size: clamp(4.5rem, 10vw, 6rem); font-weight: 800; line-height: 0.72; letter-spacing: -0.04em; text-transform: uppercase; }
 .hero-lockup strong { display: flex; align-items: baseline; gap: 0.2em; color: var(--vermilion); font-size: 0.68em; letter-spacing: -0.01em; }
 .hero-lockup em { color: var(--white); font-size: 0.42em; font-style: normal; letter-spacing: 0.02em; }

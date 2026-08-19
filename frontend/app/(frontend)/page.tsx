@@ -1,10 +1,11 @@
-import { FaqSection } from "@/components/public/faq-section";
 import { EventLogistics } from "@/components/public/event-logistics";
+import { FaqSection } from "@/components/public/faq-section";
 import { GalleryPreview } from "@/components/public/gallery-preview";
 import { HeroSection } from "@/components/public/hero-section";
 import { HighlightsSection } from "@/components/public/highlights-section";
 import { PartnersContact } from "@/components/public/partners-contact";
 import { RaceCategories } from "@/components/public/race-categories";
+import { SeoBackground } from "@/components/public/seo-background";
 import { StorySections } from "@/components/public/story-sections";
 import { loadPublicSiteData } from "@/lib/site-data";
 import { buildSiteJsonLd, jsonLdScript } from "@/lib/seo";
@@ -17,6 +18,7 @@ export default async function HomePage() {
   return (
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(buildSiteJsonLd(settings, categories)) }} />
+      <SeoBackground settings={settings} />
       <HeroSection settings={settings} initialNow={new Date().toISOString()} heroImage={settings.heroPhoto?.url} />
       <RaceCategories categories={categories} showRegistrationCta={settings.showRegistrationCta} />
       <EventLogistics entries={logistics} timezone={settings.timezone} heading={settings.logisticsHeading} subheading={settings.logisticsSubheading} />

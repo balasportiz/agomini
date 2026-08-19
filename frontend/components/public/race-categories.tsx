@@ -5,8 +5,8 @@ export function RaceCategories({ categories, showRegistrationCta }: { categories
   return (
     <section id="categories" className="section section--ivory race-section">
       <div className="section-heading split-heading">
-        <h2>Agomoni Run distances</h2>
-        <p>3K, 5K, 10K and 15K races in Barasat, Kolkata — official Agomoni Run 2.0 categories from Barasat Runners.</p>
+        <h2>Choose your distance.</h2>
+        <p>Three ways to carry one message through Barasat: movement, community and a healthy heart.</p>
       </div>
       <div className="race-list">
         {categories.map((category, index) => (
