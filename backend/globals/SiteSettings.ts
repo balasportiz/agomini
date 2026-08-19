@@ -66,6 +66,22 @@ export const SiteSettings: GlobalConfig = {
             { name: "venue", type: "text", required: true, defaultValue: defaultSiteSettings.venue },
             { name: "organiserName", type: "text", required: true, defaultValue: defaultSiteSettings.organiserName },
             { name: "organiserDescription", type: "textarea", required: true, defaultValue: defaultSiteSettings.organiserDescription },
+            {
+              name: "logisticsHeading",
+              label: "Event day heading",
+              type: "text",
+              required: true,
+              defaultValue: defaultSiteSettings.logisticsHeading,
+              admin: { description: "Large heading above the arrival and bib-collection entries on the homepage." },
+            },
+            {
+              name: "logisticsSubheading",
+              label: "Event day sub-heading",
+              type: "textarea",
+              required: true,
+              defaultValue: defaultSiteSettings.logisticsSubheading,
+              admin: { description: "One line shown beside the event day heading." },
+            },
           ],
         },
         {

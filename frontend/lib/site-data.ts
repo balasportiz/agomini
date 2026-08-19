@@ -133,6 +133,8 @@ export type PublicSettings = {
   youtubeUrl?: string | null;
   galleryTitle: string;
   galleryDescription: string;
+  logisticsHeading: string;
+  logisticsSubheading: string;
   heroManifesto: HeroManifesto;
   aboutBengaliWord: string;
   aboutHeading: string;
@@ -364,6 +366,14 @@ async function fetchPublicSiteDataFromApi() {
     ...defaultSettings,
     ...(settingsRaw as Partial<PublicSettings>),
     heroPhoto: asPublicPhoto(settingsRaw.heroPhoto),
+    logisticsHeading:
+      typeof settingsRaw.logisticsHeading === "string" && settingsRaw.logisticsHeading.trim()
+        ? settingsRaw.logisticsHeading
+        : defaultSettings.logisticsHeading,
+    logisticsSubheading:
+      typeof settingsRaw.logisticsSubheading === "string" && settingsRaw.logisticsSubheading.trim()
+        ? settingsRaw.logisticsSubheading
+        : defaultSettings.logisticsSubheading,
     showRegistrationCta:
       typeof settingsRaw.showRegistrationCta === "boolean"
         ? settingsRaw.showRegistrationCta

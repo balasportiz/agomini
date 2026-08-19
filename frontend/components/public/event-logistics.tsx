@@ -1,6 +1,6 @@
 import type { PublicEventLogistic } from "@/lib/site-data";
 
-export function EventLogistics({ entries, timezone }: { entries: PublicEventLogistic[]; timezone: string }) {
+export function EventLogistics({ entries, timezone, heading, subheading }: { entries: PublicEventLogistic[]; timezone: string; heading: string; subheading: string }) {
   if (!entries.length) return null;
 
   const formatter = new Intl.DateTimeFormat("en-IN", {
@@ -16,8 +16,8 @@ export function EventLogistics({ entries, timezone }: { entries: PublicEventLogi
   return (
     <section id="event-logistics" className="event-logistics">
       <header className="logistics-heading">
-        <h2>Arrive informed.<br />Run with confidence.</h2>
-        <p>Everything runners need to reach race day and collect their bib without uncertainty.</p>
+        <h2>{heading}</h2>
+        <p>{subheading}</p>
       </header>
       <div className="logistics-list">
         {entries.map((entry, index) => (

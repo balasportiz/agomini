@@ -30,7 +30,7 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: eventJsonLd }} />
       <HeroSection settings={settings} initialNow={new Date().toISOString()} heroImage={settings.heroPhoto?.url} />
       <RaceCategories categories={categories} showRegistrationCta={settings.showRegistrationCta} />
-      <EventLogistics entries={logistics} timezone={settings.timezone} />
+      <EventLogistics entries={logistics} timezone={settings.timezone} heading={settings.logisticsHeading} subheading={settings.logisticsSubheading} />
       <StorySections settings={settings} />
       <HighlightsSection highlights={settings.highlights} />
       <GalleryPreview photos={photos.slice(0, 8)} settings={settings} edition={homepageEdition} />

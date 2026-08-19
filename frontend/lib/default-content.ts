@@ -18,6 +18,8 @@ export const defaultSiteSettings = {
   announcement: { enabled: false },
   galleryTitle: "The Agomoni Run gallery",
   galleryDescription: "Moments of movement, solidarity and celebration from our community and past editions.",
+  logisticsHeading: "Event day info",
+  logisticsSubheading: "Race-day arrival and bib-collection details.",
   heroManifesto: {
     bengaliWord: "একসাথে",
     line1: "Run for a healthy heart.",

@@ -9,6 +9,7 @@ import { SiteImageField } from "@/components/studio/site-image-field";
 import { SaveBar } from "@/components/studio/save-bar";
 import { useStudioForm } from "@/components/studio/use-studio-form";
 import { updateGlobal } from "@/components/studio/studio-api";
+import { defaultSiteSettings } from "@/lib/default-content";
 import type { StudioMediaOption } from "@/lib/studio-data";
 
 type Group = Record<string, unknown>;
@@ -21,6 +22,8 @@ type Values = {
   venue: string;
   organiserName: string;
   organiserDescription: string;
+  logisticsHeading: string;
+  logisticsSubheading: string;
   heroHeading: string;
   heroSubheading: string;
   heroPhoto: string | null;
@@ -101,6 +104,8 @@ export function SiteEditor({
     venue: str(initial.venue),
     organiserName: str(initial.organiserName),
     organiserDescription: str(initial.organiserDescription),
+    logisticsHeading: str(initial.logisticsHeading, defaultSiteSettings.logisticsHeading),
+    logisticsSubheading: str(initial.logisticsSubheading, defaultSiteSettings.logisticsSubheading),
     heroHeading: str(initial.heroHeading),
     heroSubheading: str(initial.heroSubheading),
     heroPhoto: rel(initial.heroPhoto),
@@ -216,6 +221,10 @@ export function SiteEditor({
             <Field label="Venue"><Input value={values.venue} onChange={(e) => setValue("venue", e.target.value)} /></Field>
             <Field label="Organiser name"><Input value={values.organiserName} onChange={(e) => setValue("organiserName", e.target.value)} /></Field>
             <Field label="Organiser description"><Textarea rows={3} value={values.organiserDescription} onChange={(e) => setValue("organiserDescription", e.target.value)} /></Field>
+            <div className="studio-grid studio-grid--2">
+              <Field label="Event day heading" hint="Large heading above the arrival and bib-collection entries."><Input value={values.logisticsHeading} onChange={(e) => setValue("logisticsHeading", e.target.value)} /></Field>
+              <Field label="Event day sub-heading" hint="One line beside the heading."><Input value={values.logisticsSubheading} onChange={(e) => setValue("logisticsSubheading", e.target.value)} /></Field>
+            </div>
           </div>
         </div>
       )}
