@@ -260,8 +260,9 @@ async function fetchPublicSiteDataFromApi() {
     payloadGet<PayloadListResponse>("/api/sponsors?where[active][equals]=true&sort=_order&limit=50&depth=1"),
   ]);
 
-  // Any null means the VPS is unreachable — fall back to defaults.
-  if (!settingsRaw || !navigationRaw) return null;
+  // A single failing resource (e.g. one global erroring) must not blank the
+  // whole site — defaults fill in for whatever is missing.
+  const settingsData = settingsRaw ?? ({} as PayloadGlobalResponse);
 
   // --- editions + gallery photos ---
   const groupPhotosByEdition = (docs: Record<string, unknown>[] | undefined) => {
@@ -296,7 +297,7 @@ async function fetchPublicSiteDataFromApi() {
     })
     .filter((e) => e.id && e.name && e.slug);
 
-  const featuredEditionId = relationshipId(settingsRaw.featuredGalleryEdition);
+  const featuredEditionId = relationshipId(settingsData.featuredGalleryEdition);
   const featuredEdition = publicEditions.find((e) => e.id === featuredEditionId);
   const featuredCount = (edition: PublicEdition | undefined) =>
     edition ? (featuredByEdition.get(edition.id) ?? []).length : 0;
@@ -358,29 +359,29 @@ async function fetchPublicSiteDataFromApi() {
   const publicCategories = (categoriesRaw?.docs ?? []) as unknown as PublicCategory[];
 
   // --- settings ---
-  const rawHeroManifesto = (settingsRaw.heroManifesto as Record<string, unknown> | undefined) ?? {};
-  const rawStoryChapter = (settingsRaw.storyChapter as Record<string, unknown> | undefined) ?? {};
-  const rawCommunityChapter = (settingsRaw.communityChapter as Record<string, unknown> | undefined) ?? {};
+  const rawHeroManifesto = (settingsData.heroManifesto as Record<string, unknown> | undefined) ?? {};
+  const rawStoryChapter = (settingsData.storyChapter as Record<string, unknown> | undefined) ?? {};
+  const rawCommunityChapter = (settingsData.communityChapter as Record<string, unknown> | undefined) ?? {};
 
   const settings: PublicSettings = {
     ...defaultSettings,
-    ...(settingsRaw as Partial<PublicSettings>),
-    heroPhoto: asPublicPhoto(settingsRaw.heroPhoto),
+    ...(settingsData as Partial<PublicSettings>),
+    heroPhoto: asPublicPhoto(settingsData.heroPhoto),
     logisticsHeading:
-      typeof settingsRaw.logisticsHeading === "string" && settingsRaw.logisticsHeading.trim()
-        ? settingsRaw.logisticsHeading
+      typeof settingsData.logisticsHeading === "string" && settingsData.logisticsHeading.trim()
+        ? settingsData.logisticsHeading
         : defaultSettings.logisticsHeading,
     logisticsSubheading:
-      typeof settingsRaw.logisticsSubheading === "string" && settingsRaw.logisticsSubheading.trim()
-        ? settingsRaw.logisticsSubheading
+      typeof settingsData.logisticsSubheading === "string" && settingsData.logisticsSubheading.trim()
+        ? settingsData.logisticsSubheading
         : defaultSettings.logisticsSubheading,
     showRegistrationCta:
-      typeof settingsRaw.showRegistrationCta === "boolean"
-        ? settingsRaw.showRegistrationCta
+      typeof settingsData.showRegistrationCta === "boolean"
+        ? settingsData.showRegistrationCta
         : defaultSettings.showRegistrationCta,
     showResultsCta:
-      typeof settingsRaw.showResultsCta === "boolean"
-        ? settingsRaw.showResultsCta
+      typeof settingsData.showResultsCta === "boolean"
+        ? settingsData.showResultsCta
         : defaultSettings.showResultsCta,
     highlights: publicHighlights,
     faqs: publicFaqs,
