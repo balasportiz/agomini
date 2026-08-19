@@ -123,19 +123,20 @@ export function loadPartnerMediaOptions(): Promise<StudioMediaOption[]> {
 }
 
 /** Current Site Settings global as a plain object for the editor form. */
-export async function loadSiteSettings(): Promise<Record<string, unknown>> {
+/** Current Site settings global, or null when the API could not be reached. */
+export async function loadSiteSettings(): Promise<Record<string, unknown> | null> {
   const cookie = await getCookieHeader();
-  const result = await apiGet<Record<string, unknown>>("/api/globals/site-settings?depth=0", cookie);
-  return result ?? {};
+  return apiGet<Record<string, unknown>>("/api/globals/site-settings?depth=0", cookie);
 }
 
-/** Current Navigation global (header/footer link arrays). */
+/** Current Navigation global, or null when the API could not be reached. */
 export async function loadNavigation(): Promise<{
   headerLinks: { label: string; href: string }[];
   footerLinks: { label: string; href: string }[];
-}> {
+} | null> {
   const cookie = await getCookieHeader();
   const nav = await apiGet<Record<string, unknown>>("/api/globals/navigation?depth=0", cookie);
+  if (!nav) return null;
   const toLinks = (value: unknown) =>
     Array.isArray(value)
       ? (value as Record<string, unknown>[]).map((item) => ({
@@ -144,8 +145,8 @@ export async function loadNavigation(): Promise<{
         }))
       : [];
   return {
-    headerLinks: toLinks(nav?.headerLinks),
-    footerLinks: toLinks(nav?.footerLinks),
+    headerLinks: toLinks(nav.headerLinks),
+    footerLinks: toLinks(nav.footerLinks),
   };
 }
 

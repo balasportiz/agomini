@@ -326,6 +326,10 @@
 .studio-publish-note span { max-width: 68ch; color: var(--studio-muted); font-size: 0.72rem; }
 .studio-publish-note b { color: var(--studio-ink); font-weight: 700; }
 
+.studio-load-failure { max-width: 60ch; margin: 2rem auto; padding: 1.5rem 1.75rem; border: 1px solid oklch(0.6 0.19 25 / 0.45); border-radius: var(--studio-radius-sm); background: oklch(0.6 0.19 25 / 0.07); }
+.studio-load-failure h2 { margin: 0 0 0.6rem; color: var(--studio-ink); font-size: 1.05rem; }
+.studio-load-failure p { margin: 0 0 0.5rem; color: var(--studio-muted); font-size: 0.82rem; }
+
 /* ---------- Reorder / Save / Tabs ---------- */
 .studio-reorder { display: inline-flex; flex-direction: column; gap: 0.15rem; }
 .studio-reorder button { width: 1.7rem; height: 1.35rem; display: grid; place-items: center; border: 1px solid var(--studio-line-strong); border-radius: var(--studio-radius-sm); background: var(--studio-black); color: var(--studio-muted); cursor: pointer; transition: color 120ms var(--ease-out), border-color 120ms var(--ease-out), transform 100ms var(--ease-out); }

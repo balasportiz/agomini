@@ -5,6 +5,7 @@ import * as migration_20260720_082526_event_logistics from './20260720_082526_ev
 import * as migration_20260720_164900_user_roles_enum from './20260720_164900_user_roles_enum';
 import * as migration_20260720_164937_admin_overhaul from './20260720_164937_admin_overhaul';
 import * as migration_20260721_105955_edition_archives from './20260721_105955_edition_archives';
+import * as migration_20260819_180000_logistics_heading from './20260819_180000_logistics_heading';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260721_105955_edition_archives.up,
     down: migration_20260721_105955_edition_archives.down,
     name: '20260721_105955_edition_archives'
+  },
+  {
+    up: migration_20260819_180000_logistics_heading.up,
+    down: migration_20260819_180000_logistics_heading.down,
+    name: '20260819_180000_logistics_heading',
   },
 ];
