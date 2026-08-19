@@ -31,6 +31,7 @@ export default async function StudioPartnersPage() {
       defaults={{ name: "", logo: null, websiteUrl: "", description: "", active: true }}
       initialRows={rows}
       mediaOptions={mediaOptions}
+      orderable
     />
   );
 }

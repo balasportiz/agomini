@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,7 @@ export function CollectionEditor({
   defaults,
   initialRows,
   mediaOptions,
+  orderable = false,
 }: {
   collection: string;
   singular: string;
@@ -80,6 +81,7 @@ export function CollectionEditor({
   defaults: Row;
   initialRows: Row[];
   mediaOptions: StudioMediaOption[];
+  orderable?: boolean;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>(initialRows);
@@ -88,6 +90,7 @@ export function CollectionEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Row | null>(null);
+  const [moving, setMoving] = useState(false);
 
   function openNew() {
     setDraft({ ...defaults });
@@ -178,6 +181,38 @@ export function CollectionEditor({
     }
   }
 
+  // Payload's orderable collections accept `_order` writes via PATCH; swapping
+  // the neighbours' fractional keys moves the row and persists everywhere the
+  // collection is sorted by _order (Studio lists and the public site).
+  async function moveRow(row: Row, delta: -1 | 1) {
+    const index = rows.findIndex((r) => str(r.id) === str(row.id));
+    const neighbour = rows[index + delta];
+    if (index < 0 || !neighbour) return;
+    const rowOrder = row._order;
+    const neighbourOrder = neighbour._order;
+    if (typeof rowOrder !== "string" || typeof neighbourOrder !== "string") {
+      toast.error("Reload the page once before reordering newly added items.");
+      return;
+    }
+    setMoving(true);
+    try {
+      await updateDoc(collection, str(row.id), { _order: neighbourOrder });
+      await updateDoc(collection, str(neighbour.id), { _order: rowOrder });
+      setRows((prev) => {
+        const next = [...prev];
+        next[index] = { ...neighbour, _order: rowOrder };
+        next[index + delta] = { ...row, _order: neighbourOrder };
+        return next;
+      });
+      toast.success(`${singular} moved ${delta === -1 ? "up" : "down"}. It's live on the site.`);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not reorder. Reload and try again.");
+    } finally {
+      setMoving(false);
+    }
+  }
+
   return (
     <div className="studio-content__inner">
       <div className="studio-page-head" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
@@ -196,7 +231,7 @@ export function CollectionEditor({
           </div>
         ) : (
           <div className="studio-list">
-            {rows.map((row) => {
+            {rows.map((row, index) => {
               const active = row.active !== false;
               const subtitle = subtitleField ? str(row[subtitleField]) : "";
               return (
@@ -210,6 +245,12 @@ export function CollectionEditor({
                     <span className={`studio-badge ${active ? "studio-badge--on" : "studio-badge--off"}`}>{active ? "Live" : "Hidden"}</span>
                   </label>
                   <div className="studio-list__row-actions">
+                    {orderable && (
+                      <>
+                        <Button variant="ghost" size="icon-sm" aria-label={`Move ${singular} up`} title="Move up" disabled={moving || index === 0} onClick={() => moveRow(row, -1)}><ChevronUp /></Button>
+                        <Button variant="ghost" size="icon-sm" aria-label={`Move ${singular} down`} title="Move down" disabled={moving || index === rows.length - 1} onClick={() => moveRow(row, 1)}><ChevronDown /></Button>
+                      </>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => openEdit(row)}><Pencil /> Edit</Button>
                     <Button variant="ghost" size="icon-sm" aria-label={`Delete ${singular}`} onClick={() => setDeleteTarget(row)}><Trash2 /></Button>
                   </div>

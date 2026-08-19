@@ -43,6 +43,7 @@ export default async function StudioEventLogisticsPage() {
       defaults={{ title: "", type: "race-day", venue: "", address: "", dateTime: "", directions: "", mapUrl: "", active: true }}
       initialRows={rows}
       mediaOptions={[]}
+      orderable
     />
   );
 }

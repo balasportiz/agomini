@@ -29,6 +29,7 @@ export default async function StudioFaqsPage() {
       defaults={{ question: "", answer: "", active: true }}
       initialRows={rows}
       mediaOptions={[]}
+      orderable
     />
   );
 }

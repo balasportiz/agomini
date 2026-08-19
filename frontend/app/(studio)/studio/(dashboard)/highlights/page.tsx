@@ -30,6 +30,7 @@ export default async function StudioHighlightsPage() {
       defaults={{ title: "", description: "", photo: null, active: true }}
       initialRows={rows}
       mediaOptions={mediaOptions}
+      orderable
     />
   );
 }

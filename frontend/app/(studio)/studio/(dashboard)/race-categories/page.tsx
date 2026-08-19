@@ -36,6 +36,7 @@ export default async function StudioRaceCategoriesPage() {
       defaults={{ name: "", distance: "", fee: "To be announced", reportingTime: "To be announced", startTime: "To be announced", description: "", ageEligibility: "", inclusions: [], active: true }}
       initialRows={rows}
       mediaOptions={[]}
+      orderable
     />
   );
 }
