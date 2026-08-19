@@ -16,7 +16,7 @@ export default async function HomePage() {
 
   return (
     <main>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(buildSiteJsonLd(settings)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(buildSiteJsonLd(settings, categories)) }} />
       <HeroSection settings={settings} initialNow={new Date().toISOString()} heroImage={settings.heroPhoto?.url} />
       <RaceCategories categories={categories} showRegistrationCta={settings.showRegistrationCta} />
       <EventLogistics entries={logistics} timezone={settings.timezone} heading={settings.logisticsHeading} subheading={settings.logisticsSubheading} />

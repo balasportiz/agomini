@@ -21,14 +21,14 @@ export const defaultSiteSettings = {
   logisticsHeading: "Event day info",
   logisticsSubheading: "Race-day arrival and bib-collection details.",
   seo: {
-    title: "Agomoni Run 2.0 | Official website — Barasat Runners",
+    title: "Agomoni Run 2026 | Official Site — Barasat, Kolkata",
     description:
-      "Official website of Agomoni Run 2.0, organised by Barasat Runners in Barasat, West Bengal. Community run on 4 October 2026 for World Heart Day. Register, race-day info, gallery and results at agomonirun.com.",
+      "Official website of Agomoni Run 2.0 by Barasat Runners. 3K, 5K, 10K and 15K community races in Barasat, Kolkata on 4 October 2026. Register, race-day info, gallery and results at agomonirun.com.",
     keywords:
-      "Agomoni Run, Agomoni Run 2.0, official Agomoni Run website, Barasat Runners, Barasat marathon, Barasat 10K, Barasat 5K, World Heart Day run, West Bengal running event, agomonirun.com",
-    ogTitle: "Agomoni Run 2.0 — Official website | Run For Healthy Heart",
+      "Agomoni Run, Agomoni Run 2026, Agomoni Run 2.0, Agomoni Run Barasat, Agomoni Run Kolkata, Agomoni Run registration, official Agomoni Run website, Barasat Runners, Barasat 5K, Barasat 10K, Barasat 15K, 3K fun run Barasat, Subhash Maidan, World Heart Day run, Durga Puja run Barasat, West Bengal marathon",
+    ogTitle: "Agomoni Run 2026 (2.0) — Official website | Barasat Runners",
     ogDescription:
-      "The official Agomoni Run website. Organised by Barasat Runners in Barasat, West Bengal. Visit https://agomonirun.com for registration, event-day details, gallery and results.",
+      "The official Agomoni Run website. 3K, 5K, 10K and 15K in Barasat, Kolkata on 4 October 2026, organised by Barasat Runners. Visit agomonirun.com to register.",
     googleSiteVerification: "",
   },
   heroManifesto: {

@@ -22,22 +22,31 @@ export function HeroSection({ settings, initialNow, heroImage }: {
   return (
     <HeroMotion>
       <div className="hero-sticky">
-        <div className="hero-media" aria-hidden="true">
-          <Image src={heroImage || fallbackHero} alt="" fill priority sizes="100vw" className="hero-image" unoptimized={Boolean(heroImage)} />
+        <div className="hero-media">
+          <Image
+            src={heroImage || fallbackHero}
+            alt={settings.heroPhoto?.altText || `${settings.eventName} in Barasat, Kolkata — community run organised by ${settings.organiserName}`}
+            fill
+            priority
+            sizes="100vw"
+            className="hero-image"
+            unoptimized={Boolean(heroImage)}
+          />
           <div className="hero-scrim" />
         </div>
         <div className="hero-vermilion-field" aria-hidden="true" />
 
         <div className="hero-copy">
-          <p className="hero-organiser">Organised by {settings.organiserName}</p>
-          <div className="hero-lockup" aria-hidden="true">
+          <p className="hero-organiser">Official website of Agomoni Run · Organised by {settings.organiserName}</p>
+          <h1 className="hero-lockup">
             <span>{settings.heroManifesto.wordmarkTop}</span>
             <strong>{settings.heroManifesto.wordmarkBottom} <em>{settings.heroManifesto.wordmarkYear}</em></strong>
-          </div>
+          </h1>
+          <p className="hero-kicker">Agomoni Run 2026 in Barasat, Kolkata · 3K · 5K · 10K · 15K</p>
 
           <div className="hero-details">
             <div className="hero-message">
-              <h1>{settings.heroHeading}</h1>
+              <p className="hero-heading">{settings.heroHeading}</p>
               <p className="hero-intro">{settings.heroSubheading}</p>
               {(settings.showRegistrationCta || settings.showResultsCta) && (
                 <div className="hero-actions">

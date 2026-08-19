@@ -61,6 +61,7 @@ export default async function FrontendLayout({ children }: Readonly<{ children: 
   return (
     <html lang="en-IN">
       <body className={`${bodyFont.variable} ${displayFont.variable} ${bengaliFont.variable}`}>
+        <a className="skip-link" href="#home">Skip to Agomoni Run content</a>
         <LivePreviewRefresh />
         <LiveUpdates />
         <SiteHeader settings={settings} links={navigation.headerLinks} />
