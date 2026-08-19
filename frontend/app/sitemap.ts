@@ -27,6 +27,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   } catch {
     // Still return the core sitemap so Google can fetch it if the API is down.
   }
-  await notifyIndexNow(pages.map((page) => page.url));
+  void notifyIndexNow(pages.map((page) => page.url));
   return pages;
 }
