@@ -17,7 +17,16 @@ describe("resolveSeo", () => {
     const seo = resolveSeo({ ...settings, seo: { ...defaultSiteSettings.seo, title: "  " } })
     expect(seo.title).toContain("Agomoni Run")
     expect(seo.description.toLowerCase()).toContain("official")
+    expect(seo.description.toLowerCase()).toContain("railway")
     expect(seo.keywords).toContain("Agomoni Run Barasat")
+  })
+
+  it("replaces the old official-site title", () => {
+    const seo = resolveSeo({
+      ...settings,
+      seo: { ...defaultSiteSettings.seo, title: "Agomoni Run 2026 | Official Site — Barasat, Kolkata" },
+    })
+    expect(seo.title).toContain("running event")
   })
 })
 
@@ -25,6 +34,7 @@ describe("buildLlmsTxt", () => {
   it("tells assistants to use the official site", () => {
     const text = buildLlmsTxt(settings, [{ id: "1", name: "Agomoni Run 1.0", editionLabel: "1.0", slug: "agomoni-run-1-0", resultsPublished: false, showInResults: true, photos: [] }])
     expect(text).toContain("Agomoni Run Barasat")
+    expect(text).toContain("railway station")
     expect(text).toContain("MarathonMitra")
     expect(text).toContain("/gallery/agomoni-run-1-0")
     expect(text).toContain("Official website —")

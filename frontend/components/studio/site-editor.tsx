@@ -416,11 +416,13 @@ export function SiteEditor({
             <div className="studio-card__head"><h3>Google Search Console</h3></div>
             <div className="studio-card__body">
               <p className="studio-hint">
-                1. Open Google Search Console and add the property https://agomonirun.com
+                1. Open Google Search Console and add https://www.agomonirun.com (use www).
                 <br />
                 2. Choose HTML-tag verification and paste only the long content code below (not the full meta tag).
                 <br />
-                3. After Google verifies the site, submit this sitemap (www, not the apex): https://www.agomonirun.com/sitemap.xml
+                3. Submit sitemap https://www.agomonirun.com/sitemap.xml then click Request indexing on the homepage.
+                <br />
+                4. Also submit https://www.agomonirun.com at https://search.brave.com/submit-url (Brave has its own index).
               </p>
               <Field label="Google verification code">
                 <Input value={str(values.seo.googleSiteVerification)} onChange={(e) => setGroup("seo", "googleSiteVerification", e.target.value)} placeholder="google-site-verification token" />

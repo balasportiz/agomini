@@ -60,7 +60,7 @@ export function SiteFooter({ settings, links }: { settings: PublicSettings; link
         )}
       </div>
 
-      <div className="footer-bottom"><span>© {new Date().getFullYear()} {settings.organiserName}</span><span>Movement · heart health · community</span></div>
+      <div className="footer-bottom"><span>© {new Date().getFullYear()} {settings.organiserName}</span><span>Agomoni Run is Barasat&rsquo;s official community running event</span></div>
     </footer>
   );
 }

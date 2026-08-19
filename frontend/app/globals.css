@@ -71,7 +71,6 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--ink); }
 body { margin: 0; overflow-x: clip; background: var(--ivory); color: var(--ink); font-family: var(--font-body), Arial, sans-serif; font-size: 1rem; line-height: 1.55; text-rendering: optimizeLegibility; }
-.seo-background { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; opacity: 0; pointer-events: none; user-select: none; }
 .skip-link { position: absolute; z-index: 100; left: 1rem; top: 0; transform: translateY(-120%); padding: 0.55rem 0.9rem; background: var(--vermilion); color: var(--white); font-size: 0.85rem; font-weight: 700; }
 .skip-link:focus { transform: translateY(0.75rem); }
 body, button, a { -webkit-font-smoothing: antialiased; }

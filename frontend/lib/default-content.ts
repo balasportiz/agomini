@@ -21,14 +21,14 @@ export const defaultSiteSettings = {
   logisticsHeading: "Event day info",
   logisticsSubheading: "Race-day arrival and bib-collection details.",
   seo: {
-    title: "Agomoni Run 2026 | Official Site — Barasat, Kolkata",
+    title: "Agomoni Run 2026 | Official Barasat running event, Kolkata",
     description:
-      "Official website of Agomoni Run 2.0 by Barasat Runners. 3K, 5K, 10K and 15K community races in Barasat, Kolkata on 4 October 2026. Register, race-day info, gallery and results at agomonirun.com.",
+      "Official Agomoni Run site — Barasat community race by Barasat Runners (not Agomoni railway station). 3K, 5K, 10K, 15K on 4 Oct 2026. Register at agomonirun.com.",
     keywords:
-      "Agomoni Run, Agomoni Run 2026, Agomoni Run 2.0, Agomoni Run Barasat, Agomoni Run Kolkata, Agomoni Run registration, official Agomoni Run website, Barasat Runners, Barasat 5K, Barasat 10K, Barasat 15K, 3K fun run Barasat, Subhash Maidan, World Heart Day run, Durga Puja run Barasat, West Bengal marathon",
-    ogTitle: "Agomoni Run 2026 (2.0) — Official website | Barasat Runners",
+      "Agomoni Run, Agomoni Run 2026, Agomoni Run 2025, Agomoni Run 2.0, Agomoni Run Barasat, Agomoni Run Kolkata, Barasat running event, Barasat Runners, 3K 5K 10K 15K Barasat, official Agomoni Run website, Agomoni Run registration, World Heart Day run Barasat",
+    ogTitle: "Agomoni Run 2026 — Official Barasat running event",
     ogDescription:
-      "The official Agomoni Run website. 3K, 5K, 10K and 15K in Barasat, Kolkata on 4 October 2026, organised by Barasat Runners. Visit agomonirun.com to register.",
+      "Official website of Agomoni Run, the Barasat community race organised by Barasat Runners. 3K, 5K, 10K, 15K. agomonirun.com",
     googleSiteVerification: "",
   },
   heroManifesto: {
@@ -78,7 +78,9 @@ export const defaultFooterLinks = [
 ];
 
 export const defaultFaqs = [
-  { question: "How do I register?", answer: "Use any Register button on this website. The official registration destination will open when registration is available.", active: true },
+  { question: "What is Agomoni Run?", answer: "Agomoni Run is the official community running event organised by Barasat Runners in Barasat, Kolkata. It is a race (3K, 5K, 10K and 15K), not Agomoni railway station. The official website is agomonirun.com.", active: true },
+  { question: "How do I register for Agomoni Run?", answer: "Use any Register button on agomonirun.com, the official Agomoni Run website. The verified registration destination opens from that page.", active: true },
+  { question: "When is Agomoni Run 2026?", answer: "Agomoni Run 2.0 is scheduled for 4 October 2026 in Barasat, West Bengal. Race-day timings are published on the official website once confirmed.", active: true },
   { question: "When will race-day details be confirmed?", answer: "Category times, eligibility, inclusions and collection details will be published after confirmation by the organisers.", active: true },
 ];
 
