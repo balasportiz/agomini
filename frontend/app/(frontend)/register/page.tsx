@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Register",
-  description: "Registration information for Agomoni Run 2.0 in Barasat.",
+  description: "Official registration for Agomoni Run 2.0 by Barasat Runners in Barasat, West Bengal. Use this page on agomonirun.com for the verified registration link.",
   alternates: { canonical: "/register" },
 };
 

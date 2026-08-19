@@ -47,6 +47,7 @@ type Values = {
   youtubeUrl: string;
   galleryTitle: string;
   galleryDescription: string;
+  seo: Group;
 };
 
 const str = (v: unknown, fallback = "") => (typeof v === "string" ? v : fallback);
@@ -76,6 +77,7 @@ const TABS = [
   { id: "hero", label: "Hero & buttons" },
   { id: "story", label: "Story sections" },
   { id: "contact", label: "Contact & gallery" },
+  { id: "seo", label: "SEO" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -94,6 +96,7 @@ export function SiteEditor({
   const story = (initial.storyChapter as Group) ?? {};
   const community = (initial.communityChapter as Group) ?? {};
   const announcement = (initial.announcement as Group) ?? {};
+  const seo = (initial.seo as Group) ?? {};
 
   const { values, setValue, dirty, saving, save } = useStudioForm<Values>({
     eventName: str(initial.eventName),
@@ -156,9 +159,17 @@ export function SiteEditor({
     youtubeUrl: str(initial.youtubeUrl),
     galleryTitle: str(initial.galleryTitle),
     galleryDescription: str(initial.galleryDescription),
+    seo: {
+      title: str(seo.title, defaultSiteSettings.seo.title),
+      description: str(seo.description, defaultSiteSettings.seo.description),
+      keywords: str(seo.keywords, defaultSiteSettings.seo.keywords),
+      ogTitle: str(seo.ogTitle, defaultSiteSettings.seo.ogTitle),
+      ogDescription: str(seo.ogDescription, defaultSiteSettings.seo.ogDescription),
+      googleSiteVerification: str(seo.googleSiteVerification),
+    },
   });
 
-  const setGroup = (group: "heroManifesto" | "storyChapter" | "communityChapter" | "announcement", key: string, value: unknown) =>
+  const setGroup = (group: "heroManifesto" | "storyChapter" | "communityChapter" | "announcement" | "seo", key: string, value: unknown) =>
     setValue(group, { ...(values[group] as Group), [key]: value });
 
   async function handleSave() {
@@ -170,6 +181,7 @@ export function SiteEditor({
     hero: { title: "Registration & results", desc: "Where the Register and Results buttons send people, and the opening message shown while people wait. This also controls what the /register and /results pages show." },
     story: { title: "Site & story", desc: "Your event details and the words shown across the homepage. Everything here updates the live site as soon as you save." },
     contact: { title: "Contact & gallery settings", desc: "Contact details, the announcement banner, and the title/description shown on the Gallery page." },
+    seo: { title: "Search & SEO", desc: "Titles, descriptions and Google verification. This is what Google, ChatGPT, Claude and other assistants read as the official Agomoni Run site." },
   }[tab];
 
   return (
@@ -193,6 +205,16 @@ export function SiteEditor({
           <a href="/gallery" target="_blank" rel="noreferrer" className="studio-hint" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", textDecoration: "underline" }}>
             Open /gallery ↗
           </a>
+        )}
+        {tab === "seo" && (
+          <div className="studio-inline-actions">
+            <a href="/sitemap.xml" target="_blank" rel="noreferrer" className="studio-hint" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", textDecoration: "underline" }}>
+              Open sitemap ↗
+            </a>
+            <a href="/llms.txt" target="_blank" rel="noreferrer" className="studio-hint" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", textDecoration: "underline" }}>
+              Open llms.txt ↗
+            </a>
+          </div>
         )}
       </div>
 
@@ -362,6 +384,47 @@ export function SiteEditor({
               <p className="studio-hint">Shown on the homepage only when no event edition is selected in Galleries. When an edition is set, its name and description are used instead.</p>
               <Field label="Gallery title"><Input value={values.galleryTitle} onChange={(e) => setValue("galleryTitle", e.target.value)} /></Field>
               <Field label="Gallery description"><Textarea rows={2} value={values.galleryDescription} onChange={(e) => setValue("galleryDescription", e.target.value)} /></Field>
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab === "seo" && (
+        <>
+          <div className="studio-card">
+            <div className="studio-card__head"><h3>Google listing</h3><p>These fields become the title and snippet on Google. Leave a field empty to keep the recommended official-site copy.</p></div>
+            <div className="studio-card__body">
+              <Field label="Google title" hint="About 50–60 characters. Include Agomoni Run and Barasat.">
+                <Input value={str(values.seo.title)} onChange={(e) => setGroup("seo", "title", e.target.value)} maxLength={70} />
+              </Field>
+              <Field label="Google description" hint="About 140–160 characters. Mention the official website, date and city.">
+                <Textarea rows={3} value={str(values.seo.description)} onChange={(e) => setGroup("seo", "description", e.target.value)} maxLength={180} />
+              </Field>
+              <Field label="Keywords" hint="Comma-separated. Keep “official Agomoni Run website” in the list.">
+                <Textarea rows={2} value={str(values.seo.keywords)} onChange={(e) => setGroup("seo", "keywords", e.target.value)} />
+              </Field>
+            </div>
+          </div>
+          <div className="studio-card">
+            <div className="studio-card__head"><h3>Social share preview</h3><p>Used when the site is shared on WhatsApp, Facebook or X. The hero photo is the share image.</p></div>
+            <div className="studio-card__body">
+              <Field label="Share title"><Input value={str(values.seo.ogTitle)} onChange={(e) => setGroup("seo", "ogTitle", e.target.value)} maxLength={90} /></Field>
+              <Field label="Share description"><Textarea rows={2} value={str(values.seo.ogDescription)} onChange={(e) => setGroup("seo", "ogDescription", e.target.value)} maxLength={200} /></Field>
+            </div>
+          </div>
+          <div className="studio-card">
+            <div className="studio-card__head"><h3>Google Search Console</h3></div>
+            <div className="studio-card__body">
+              <p className="studio-hint">
+                1. Open Google Search Console and add the property https://agomonirun.com
+                <br />
+                2. Choose HTML-tag verification and paste only the long content code below (not the full meta tag).
+                <br />
+                3. After Google verifies the site, submit the sitemap: https://agomonirun.com/sitemap.xml
+              </p>
+              <Field label="Google verification code">
+                <Input value={str(values.seo.googleSiteVerification)} onChange={(e) => setGroup("seo", "googleSiteVerification", e.target.value)} placeholder="google-site-verification token" />
+              </Field>
             </div>
           </div>
         </>

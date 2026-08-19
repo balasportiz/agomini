@@ -30,6 +30,7 @@ export const STUDIO_NAV: StudioNavGroup[] = [
       { label: "Registration", href: "/studio/registration", icon: "Flag", description: "Registration status, link and buttons", requires: "canEditContent" },
       { label: "Results", href: "/studio/results", icon: "Trophy", description: "Edition archive and official results links", requires: "canEditContent" },
       { label: "Galleries", href: "/studio/galleries", icon: "Images", description: "Edition photos, uploads and homepage archive", requires: "canEditContent" },
+      { label: "SEO", href: "/studio/seo", icon: "Search", description: "Google titles, sitemap and AI discovery", requires: "canEditContent" },
     ],
   },
   {

@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Gallery",
-  description: "Photographs from every published Agomoni Run edition and the Barasat running community.",
+  description: "Official Agomoni Run photo gallery from Barasat Runners — photographs from every published edition.",
   alternates: { canonical: "/gallery" },
 };
 

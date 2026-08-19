@@ -13,6 +13,7 @@ import {
   MapPin,
   Menu as MenuIcon,
   MessageCircleQuestion,
+  Search,
   Sparkles,
   Star,
   Trophy,
@@ -36,6 +37,7 @@ const ICONS: Record<string, typeof Flag> = {
   Images,
   Users,
   Trophy,
+  Search,
 };
 
 export type StudioShellUser = { name: string; email: string; roleLabel: string };
@@ -49,7 +51,7 @@ const PUBLIC_PAGE_FOR: { match: (path: string) => boolean; publicPath: string }[
   { match: (p) => p.startsWith("/studio/faqs"), publicPath: "/#faq" },
   { match: (p) => p.startsWith("/studio/highlights"), publicPath: "/#highlights" },
   { match: (p) => p.startsWith("/studio/race-categories"), publicPath: "/#categories" },
-  { match: (p) => p.startsWith("/studio/event-logistics"), publicPath: "/#event-logistics" },
+  { match: (p) => p.startsWith("/studio/seo"), publicPath: "/" },
 ];
 
 function publicPathFor(pathname: string): string {

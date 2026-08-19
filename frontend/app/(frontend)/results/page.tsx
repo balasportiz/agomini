@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Results archive",
-  description: "Official timing and results links for published Agomoni Run editions.",
+  description: "Official Agomoni Run results archive. Verified timing links for published editions from Barasat Runners.",
   alternates: { canonical: "/results" },
 };
 

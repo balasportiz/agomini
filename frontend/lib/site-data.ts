@@ -104,6 +104,15 @@ export type CommunityChapter = {
   ctaLabel: string;
 };
 
+export type PublicSeo = {
+  title: string;
+  description: string;
+  keywords: string;
+  ogTitle: string;
+  ogDescription: string;
+  googleSiteVerification: string;
+};
+
 export type PublicSettings = {
   eventName: string;
   tagline: string;
@@ -136,6 +145,7 @@ export type PublicSettings = {
   galleryDescription: string;
   logisticsHeading: string;
   logisticsSubheading: string;
+  seo: PublicSeo;
   heroManifesto: HeroManifesto;
   aboutBengaliWord: string;
   aboutHeading: string;
@@ -373,6 +383,7 @@ async function fetchPublicSiteDataFromApi() {
   const rawStoryChapter = (settingsData.storyChapter as Record<string, unknown> | undefined) ?? {};
   const rawCommunityChapter = (settingsData.communityChapter as Record<string, unknown> | undefined) ?? {};
 
+  const rawSeo = (settingsData.seo as Record<string, unknown> | undefined) ?? {};
   const settings: PublicSettings = {
     ...defaultSettings,
     ...(settingsData as Partial<PublicSettings>),
@@ -385,6 +396,17 @@ async function fetchPublicSiteDataFromApi() {
       typeof settingsData.logisticsSubheading === "string" && settingsData.logisticsSubheading.trim()
         ? settingsData.logisticsSubheading
         : defaultSettings.logisticsSubheading,
+    seo: {
+      ...defaultSettings.seo,
+      ...rawSeo,
+      title: typeof rawSeo.title === "string" ? rawSeo.title : defaultSettings.seo.title,
+      description: typeof rawSeo.description === "string" ? rawSeo.description : defaultSettings.seo.description,
+      keywords: typeof rawSeo.keywords === "string" ? rawSeo.keywords : defaultSettings.seo.keywords,
+      ogTitle: typeof rawSeo.ogTitle === "string" ? rawSeo.ogTitle : defaultSettings.seo.ogTitle,
+      ogDescription: typeof rawSeo.ogDescription === "string" ? rawSeo.ogDescription : defaultSettings.seo.ogDescription,
+      googleSiteVerification:
+        typeof rawSeo.googleSiteVerification === "string" ? rawSeo.googleSiteVerification : "",
+    },
     showRegistrationCta:
       typeof settingsData.showRegistrationCta === "boolean"
         ? settingsData.showRegistrationCta

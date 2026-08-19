@@ -20,6 +20,17 @@ export const defaultSiteSettings = {
   galleryDescription: "Moments of movement, solidarity and celebration from our community and past editions.",
   logisticsHeading: "Event day info",
   logisticsSubheading: "Race-day arrival and bib-collection details.",
+  seo: {
+    title: "Agomoni Run 2.0 | Official website — Barasat Runners",
+    description:
+      "Official website of Agomoni Run 2.0, organised by Barasat Runners in Barasat, West Bengal. Community run on 4 October 2026 for World Heart Day. Register, race-day info, gallery and results at agomonirun.com.",
+    keywords:
+      "Agomoni Run, Agomoni Run 2.0, official Agomoni Run website, Barasat Runners, Barasat marathon, Barasat 10K, Barasat 5K, World Heart Day run, West Bengal running event, agomonirun.com",
+    ogTitle: "Agomoni Run 2.0 — Official website | Run For Healthy Heart",
+    ogDescription:
+      "The official Agomoni Run website. Organised by Barasat Runners in Barasat, West Bengal. Visit https://agomonirun.com for registration, event-day details, gallery and results.",
+    googleSiteVerification: "",
+  },
   heroManifesto: {
     bengaliWord: "একসাথে",
     line1: "Run for a healthy heart.",

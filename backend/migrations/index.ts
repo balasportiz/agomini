@@ -7,6 +7,7 @@ import * as migration_20260720_164937_admin_overhaul from './20260720_164937_adm
 import * as migration_20260721_105955_edition_archives from './20260721_105955_edition_archives';
 import * as migration_20260819_180000_logistics_heading from './20260819_180000_logistics_heading';
 import * as migration_20260819_191500_results_visibility from './20260819_191500_results_visibility';
+import * as migration_20260819_200000_seo_fields from './20260819_200000_seo_fields';
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260819_191500_results_visibility.up,
     down: migration_20260819_191500_results_visibility.down,
     name: '20260819_191500_results_visibility',
+  },
+  {
+    up: migration_20260819_200000_seo_fields.up,
+    down: migration_20260819_200000_seo_fields.down,
+    name: '20260819_200000_seo_fields',
   },
 ];

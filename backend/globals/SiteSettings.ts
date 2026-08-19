@@ -226,6 +226,65 @@ export const SiteSettings: GlobalConfig = {
             },
           ],
         },
+        {
+          label: "SEO",
+          description: "Search titles, descriptions and Google verification. Empty fields fall back to the recommended official-site copy.",
+          fields: [
+            {
+              name: "seo",
+              type: "group",
+              label: "Search & AI discovery",
+              fields: [
+                {
+                  name: "title",
+                  label: "Google title",
+                  type: "text",
+                  maxLength: 70,
+                  defaultValue: defaultSiteSettings.seo.title,
+                  admin: { description: "Around 50–60 characters. Shown in Google and browser tabs." },
+                },
+                {
+                  name: "description",
+                  label: "Google description",
+                  type: "textarea",
+                  maxLength: 180,
+                  defaultValue: defaultSiteSettings.seo.description,
+                  admin: { description: "Around 140–160 characters. This is the snippet under the title in Google." },
+                },
+                {
+                  name: "keywords",
+                  label: "Keywords",
+                  type: "textarea",
+                  defaultValue: defaultSiteSettings.seo.keywords,
+                  admin: { description: "Comma-separated phrases people might search, including “official Agomoni Run website”." },
+                },
+                {
+                  name: "ogTitle",
+                  label: "Social share title",
+                  type: "text",
+                  maxLength: 90,
+                  defaultValue: defaultSiteSettings.seo.ogTitle,
+                },
+                {
+                  name: "ogDescription",
+                  label: "Social share description",
+                  type: "textarea",
+                  maxLength: 200,
+                  defaultValue: defaultSiteSettings.seo.ogDescription,
+                },
+                {
+                  name: "googleSiteVerification",
+                  label: "Google Search Console verification",
+                  type: "text",
+                  admin: {
+                    description:
+                      "Paste only the content value from Google’s HTML-tag verification (not the full meta tag). Then submit https://agomonirun.com/sitemap.xml in Search Console.",
+                  },
+                },
+              ],
+            },
+          ],
+        },
       ],
     },
   ],
