@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { MediaPicker } from "@/components/studio/media-picker";
+import { SiteImageField } from "@/components/studio/site-image-field";
 import { SaveBar } from "@/components/studio/save-bar";
 import { useStudioForm } from "@/components/studio/use-studio-form";
 import { updateGlobal } from "@/components/studio/studio-api";
@@ -78,11 +78,11 @@ type TabId = (typeof TABS)[number]["id"];
 
 export function SiteEditor({
   initial,
-  mediaOptions,
+  siteImages,
   defaultTab = "event",
 }: {
   initial: Group;
-  mediaOptions: StudioMediaOption[];
+  siteImages: StudioMediaOption[];
   /** Opens straight to a specific tab, e.g. for a section deep-linking here. */
   defaultTab?: TabId;
 }) {
@@ -227,8 +227,8 @@ export function SiteEditor({
             <div className="studio-card__body">
               <Field label="Hero heading"><Input value={values.heroHeading} onChange={(e) => setValue("heroHeading", e.target.value)} /></Field>
               <Field label="Hero sub-heading"><Textarea rows={2} value={values.heroSubheading} onChange={(e) => setValue("heroSubheading", e.target.value)} /></Field>
-              <Field label="Hero background photo" hint="Choose a wide, high-quality image. Leave empty to use the default.">
-                <MediaPicker value={values.heroPhoto} options={mediaOptions} onChange={(id) => setValue("heroPhoto", id)} label="hero photo" />
+              <Field label="Hero background photo" hint="Upload a wide, high-quality image. Leave empty to use the default.">
+                <SiteImageField value={values.heroPhoto} options={siteImages} onChange={(id) => setValue("heroPhoto", id)} label="hero photo" />
               </Field>
             </div>
           </div>
@@ -291,7 +291,7 @@ export function SiteEditor({
           <div className="studio-card">
             <div className="studio-card__head"><h3>Story chapter</h3><p>The first full-width image section.</p></div>
             <div className="studio-card__body">
-              <Field label="Image"><MediaPicker value={rel(values.storyChapter.image)} options={mediaOptions} onChange={(id) => setGroup("storyChapter", "image", id)} label="image" /></Field>
+              <Field label="Image"><SiteImageField value={rel(values.storyChapter.image)} options={siteImages} onChange={(id) => setGroup("storyChapter", "image", id)} label="image" /></Field>
               <Field label="Image description (alt text)"><Input value={str(values.storyChapter.imageAlt)} onChange={(e) => setGroup("storyChapter", "imageAlt", e.target.value)} /></Field>
               <div className="studio-grid studio-grid--2">
                 <Field label="Overlay word"><Input value={str(values.storyChapter.word)} onChange={(e) => setGroup("storyChapter", "word", e.target.value)} /></Field>
@@ -304,7 +304,7 @@ export function SiteEditor({
           <div className="studio-card">
             <div className="studio-card__head"><h3>Community chapter</h3><p>The second image section with the “Join the run” call to action.</p></div>
             <div className="studio-card__body">
-              <Field label="Image"><MediaPicker value={rel(values.communityChapter.image)} options={mediaOptions} onChange={(id) => setGroup("communityChapter", "image", id)} label="image" /></Field>
+              <Field label="Image"><SiteImageField value={rel(values.communityChapter.image)} options={siteImages} onChange={(id) => setGroup("communityChapter", "image", id)} label="image" /></Field>
               <Field label="Image description (alt text)"><Input value={str(values.communityChapter.imageAlt)} onChange={(e) => setGroup("communityChapter", "imageAlt", e.target.value)} /></Field>
               <div className="studio-grid studio-grid--2">
                 <Field label="Overlay tag"><Input value={str(values.communityChapter.tag)} onChange={(e) => setGroup("communityChapter", "tag", e.target.value)} /></Field>

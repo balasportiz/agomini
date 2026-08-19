@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteEditor } from "@/components/studio/site-editor";
 import { getStudioCapabilities, requireStudioUser } from "@/lib/studio-auth";
-import { loadMediaOptions, loadSiteSettings } from "@/lib/studio-data";
+import { loadSiteMediaOptions, loadSiteSettings } from "@/lib/studio-data";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ export default async function StudioRegistrationPage() {
   const user = await requireStudioUser();
   if (!getStudioCapabilities(user).canEditContent) notFound();
 
-  const [settings, mediaOptions] = await Promise.all([loadSiteSettings(), loadMediaOptions()]);
+  const [settings, siteImages] = await Promise.all([loadSiteSettings(), loadSiteMediaOptions()]);
 
-  return <SiteEditor initial={settings} mediaOptions={mediaOptions} defaultTab="hero" />;
+  return <SiteEditor initial={settings} siteImages={siteImages} defaultTab="hero" />;
 }

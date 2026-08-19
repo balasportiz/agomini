@@ -69,7 +69,7 @@ function relationshipId(value: unknown): string | null {
 async function findGalleryMediaDocs(): Promise<Record<string, unknown>[]> {
   const cookie = await getCookieHeader();
   const result = await apiGet<{ docs: Record<string, unknown>[] }>(
-    `/api/media?${payloadListQuery({ sort: "-createdAt", limit: 1000, depth: 0 })}`,
+    `/api/media?${payloadListQuery({ "where[assetType][equals]": "event-gallery", sort: "-createdAt", limit: 1000, depth: 0 })}`,
     cookie,
   );
   return result?.docs ?? [];
@@ -94,6 +94,18 @@ export async function loadMediaOptions(): Promise<StudioMediaOption[]> {
   const cookie = await getCookieHeader();
   const result = await apiGet<{ docs: Record<string, unknown>[] }>(
     "/api/media?sort=-updatedAt&limit=200",
+    cookie,
+  );
+  return (result?.docs ?? [])
+    .map(toMediaOption)
+    .filter((o): o is StudioMediaOption => o !== null);
+}
+
+/** Website images only (hero, story chapters) — kept independent from the event gallery. */
+export async function loadSiteMediaOptions(): Promise<StudioMediaOption[]> {
+  const cookie = await getCookieHeader();
+  const result = await apiGet<{ docs: Record<string, unknown>[] }>(
+    `/api/media?${payloadListQuery({ "where[assetType][equals]": "site", sort: "-updatedAt", limit: 200 })}`,
     cookie,
   );
   return (result?.docs ?? [])

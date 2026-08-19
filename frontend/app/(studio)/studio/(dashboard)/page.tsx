@@ -53,8 +53,8 @@ export default async function StudioDashboardPage() {
       safeCount("highlights", cookieHeader),
       safeCount("faqs", cookieHeader),
       safeCount("sponsors", cookieHeader),
-      safeCount("media", cookieHeader),
-      safeCount("media", cookieHeader, "where[active][equals]=true"),
+      safeCount("media", cookieHeader, "where[assetType][equals]=event-gallery"),
+      safeCount("media", cookieHeader, "where[assetType][equals]=event-gallery&where[active][equals]=true"),
     ]);
 
   const firstName = ((user.name || "there") as string).split(" ")[0];

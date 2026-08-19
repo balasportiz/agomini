@@ -84,7 +84,7 @@ export function GalleriesManager({
       photos.filter((photo) => {
         if (photo.galleryEditionId === selectedId) return true;
         if (photo.galleryEditionId) return false;
-        if (photo.assetType === "partner") return false;
+        if (photo.assetType !== "event-gallery") return false;
         return editions.length === 1;
       }),
     [photos, selectedId, editions.length],
