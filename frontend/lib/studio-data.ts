@@ -101,32 +101,6 @@ export async function loadMediaOptions(): Promise<StudioMediaOption[]> {
     .filter((o): o is StudioMediaOption => o !== null);
 }
 
-/** Full media library for the gallery manager (includes inactive). */
-export async function loadMediaLibrary(): Promise<
-  (StudioMediaOption & { caption: string; featured: boolean; updatedAt: string })[]
-> {
-  const cookie = await getCookieHeader();
-  const result = await apiGet<{ docs: Record<string, unknown>[] }>(
-    "/api/media?sort=_order&limit=500",
-    cookie,
-  );
-  return (result?.docs ?? [])
-    .map((doc) => {
-      const base = toMediaOption(doc);
-      if (!base) return null;
-      return {
-        ...base,
-        caption: typeof doc.caption === "string" ? doc.caption : "",
-        featured: doc.featured === true,
-        updatedAt: typeof doc.updatedAt === "string" ? doc.updatedAt : "",
-      };
-    })
-    .filter(
-      (o): o is StudioMediaOption & { caption: string; featured: boolean; updatedAt: string } =>
-        o !== null,
-    );
-}
-
 /** Current Site Settings global as a plain object for the editor form. */
 export async function loadSiteSettings(): Promise<Record<string, unknown>> {
   const cookie = await getCookieHeader();
