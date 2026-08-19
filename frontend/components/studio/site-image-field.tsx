@@ -20,20 +20,22 @@ function siteImageUrl(id: string): string {
 }
 
 /**
- * Upload control for website imagery (hero, story chapters). Unlike the
- * gallery MediaPicker, files upload straight from here as `site` assets that
- * publish immediately and never appear in the event gallery.
+ * Upload control for non-gallery imagery (website images, partner logos).
+ * Unlike the gallery MediaPicker, files upload straight from here and publish
+ * immediately — they never appear in the event gallery.
  */
 export function SiteImageField({
   value,
   options,
   onChange,
   label = "image",
+  assetType = "site",
 }: {
   value: string | null;
   options: StudioMediaOption[];
   onChange: (id: string | null) => void;
   label?: string;
+  assetType?: "site" | "partner";
 }) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -54,7 +56,7 @@ export function SiteImageField({
         altText: "",
         active: true,
         featured: false,
-        assetType: "site",
+        assetType,
         showInGallery: false,
       });
       setUploaded((current) => [
@@ -101,7 +103,7 @@ export function SiteImageField({
               </DialogTrigger>
               <DialogContent className="max-w-3xl">
                 <DialogHeader>
-                  <DialogTitle>Previously uploaded website images</DialogTitle>
+                  <DialogTitle>Previously uploaded {assetType === "partner" ? "logos" : "website images"}</DialogTitle>
                 </DialogHeader>
                 <div className="studio-dialog-body">
                   <div className="studio-media-picker__grid">
@@ -132,7 +134,9 @@ export function SiteImageField({
         </div>
       </div>
       <p className="studio-hint">
-        Website images are independent: they never appear in the event gallery, and they go live as soon as you publish this page.
+        {assetType === "partner"
+          ? "Logos are independent: they never appear in the event gallery, and they show on the website as soon as the partner is saved."
+          : "Website images are independent: they never appear in the event gallery, and they go live as soon as you publish this page."}
       </p>
     </div>
   );

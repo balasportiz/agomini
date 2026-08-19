@@ -101,16 +101,25 @@ export async function loadMediaOptions(): Promise<StudioMediaOption[]> {
     .filter((o): o is StudioMediaOption => o !== null);
 }
 
-/** Website images only (hero, story chapters) — kept independent from the event gallery. */
-export async function loadSiteMediaOptions(): Promise<StudioMediaOption[]> {
+async function loadMediaByAssetType(assetType: "site" | "partner"): Promise<StudioMediaOption[]> {
   const cookie = await getCookieHeader();
   const result = await apiGet<{ docs: Record<string, unknown>[] }>(
-    `/api/media?${payloadListQuery({ "where[assetType][equals]": "site", sort: "-updatedAt", limit: 200 })}`,
+    `/api/media?${payloadListQuery({ "where[assetType][equals]": assetType, sort: "-updatedAt", limit: 200 })}`,
     cookie,
   );
   return (result?.docs ?? [])
     .map(toMediaOption)
     .filter((o): o is StudioMediaOption => o !== null);
+}
+
+/** Website images only (hero, story chapters) — kept independent from the event gallery. */
+export function loadSiteMediaOptions(): Promise<StudioMediaOption[]> {
+  return loadMediaByAssetType("site");
+}
+
+/** Partner logos only — kept independent from the event gallery. */
+export function loadPartnerMediaOptions(): Promise<StudioMediaOption[]> {
+  return loadMediaByAssetType("partner");
 }
 
 /** Current Site Settings global as a plain object for the editor form. */

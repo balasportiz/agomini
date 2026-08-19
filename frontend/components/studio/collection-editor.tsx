@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MediaPicker } from "@/components/studio/media-picker";
+import { SiteImageField } from "@/components/studio/site-image-field";
 import { createDoc, deleteDoc, updateDoc } from "@/components/studio/studio-api";
 import type { StudioMediaOption } from "@/lib/studio-data";
 
@@ -33,6 +34,8 @@ export type StudioFieldDef = {
   help?: string;
   options?: { value: string; label: string }[];
   mediaLabel?: string;
+  /** Upload directly as an independent asset instead of picking gallery photos. */
+  mediaAssetType?: "site" | "partner";
   itemLabel?: string;
 };
 
@@ -324,7 +327,8 @@ function FieldControl({ def, value, onChange, mediaOptions }: { def: StudioField
           {(def.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       )}
-      {def.type === "media" && <MediaPicker value={rel(value)} options={mediaOptions} onChange={(id) => onChange(id)} label={def.mediaLabel ?? "image"} />}
+      {def.type === "media" && def.mediaAssetType && <SiteImageField value={rel(value)} options={mediaOptions} onChange={(id) => onChange(id)} label={def.mediaLabel ?? "image"} assetType={def.mediaAssetType} />}
+      {def.type === "media" && !def.mediaAssetType && <MediaPicker value={rel(value)} options={mediaOptions} onChange={(id) => onChange(id)} label={def.mediaLabel ?? "image"} />}
       {def.type === "string-list" && <StringList value={Array.isArray(value) ? (value as string[]) : []} itemLabel={def.itemLabel ?? "item"} onChange={onChange} />}
       {def.help && <span className="studio-hint">{def.help}</span>}
     </div>
