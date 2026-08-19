@@ -3,9 +3,16 @@ import type { PublicCategory, PublicEdition, PublicSettings } from "@/lib/site-d
 
 export const OFFICIAL_SITE_HOST = "agomonirun.com";
 
+/** Live site is served on www; the apex host 308s and Google Search Console cannot fetch it. */
 export function publicSiteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL ?? `https://${OFFICIAL_SITE_HOST}`;
-  return raw.replace(/\/$/, "");
+  const raw = (process.env.NEXT_PUBLIC_SITE_URL ?? `https://www.${OFFICIAL_SITE_HOST}`).replace(/\/$/, "");
+  try {
+    const url = new URL(raw);
+    if (url.hostname === OFFICIAL_SITE_HOST) url.hostname = `www.${OFFICIAL_SITE_HOST}`;
+    return url.origin;
+  } catch {
+    return raw;
+  }
 }
 
 export function absoluteUrl(path = "/"): string {

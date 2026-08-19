@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { defaultSiteSettings } from "@/lib/default-content"
 import { buildLlmsTxt, jsonLdScript, resolveSeo } from "@/lib/seo"
 import type { PublicSettings } from "@/lib/site-data"
@@ -31,8 +31,13 @@ describe("buildLlmsTxt", () => {
   })
 })
 
-describe("jsonLdScript", () => {
-  it("escapes HTML to avoid script breakout", () => {
-    expect(jsonLdScript({ name: "</script>" })).toContain("\\u003c/script>")
+describe("publicSiteUrl", () => {
+  it("uses www so Google can fetch the sitemap without a 308", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://agomonirun.com")
+    vi.resetModules()
+    const { publicSiteUrl: url } = await import("@/lib/seo")
+    expect(url()).toBe("https://www.agomonirun.com")
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 })

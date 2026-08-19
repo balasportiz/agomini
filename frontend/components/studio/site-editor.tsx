@@ -420,7 +420,7 @@ export function SiteEditor({
                 <br />
                 2. Choose HTML-tag verification and paste only the long content code below (not the full meta tag).
                 <br />
-                3. After Google verifies the site, submit the sitemap: https://agomonirun.com/sitemap.xml
+                3. After Google verifies the site, submit this sitemap (www, not the apex): https://www.agomonirun.com/sitemap.xml
               </p>
               <Field label="Google verification code">
                 <Input value={str(values.seo.googleSiteVerification)} onChange={(e) => setGroup("seo", "googleSiteVerification", e.target.value)} placeholder="google-site-verification token" />
