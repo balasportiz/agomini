@@ -1,4 +1,4 @@
-import type { Access, FieldAccess, GlobalConfig } from "payload";
+import type { Access, FieldAccess, GlobalConfig, Where } from "payload";
 import { hasMinimumRole, isSuperAdmin, type Role } from "@/lib/roles";
 
 export const authenticated: Access = ({ req: { user } }) => Boolean(user);
@@ -13,9 +13,10 @@ export const publicReadActive: Access = ({ req: { user } }) => {
 /** Editions can be public on the gallery, the results archive, or both. */
 export const publicReadEdition: Access = ({ req: { user } }) => {
   if (user) return true;
-  return {
+  const where: Where = {
     or: [{ active: { equals: true } }, { showInResults: { equals: true } }],
   };
+  return where;
 };
 
 export const publicGlobalRead: NonNullable<GlobalConfig["access"]>["read"] = () => true;
