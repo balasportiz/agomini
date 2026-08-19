@@ -80,6 +80,11 @@ export function MediaPicker({
           )}
         </div>
       </div>
+      {selected && !selected.active && (
+        <p className="studio-hint" style={{ color: "oklch(0.5 0.2 25)", fontWeight: 600 }}>
+          This photo is hidden. Visitors will not see it until you switch it Live in the Photo gallery.
+        </p>
+      )}
       {selected && !selected.altText && (
         <p className="studio-hint" style={{ color: "oklch(0.55 0.15 60)" }}>
           This photo has no alt text. Add it in the Photo gallery so screen-reader users understand it.
