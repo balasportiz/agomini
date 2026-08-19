@@ -176,10 +176,20 @@ p { text-wrap: pretty; }
 .race-distance strong { display: block; font-family: var(--font-display), Impact, sans-serif; font-size: clamp(3.4rem, 6.5vw, 6.5rem); font-weight: 700; line-height: 0.88; letter-spacing: -0.03em; }
 .race-distance span { display: block; margin-top: 0.55rem; font-size: 0.9rem; font-weight: 600; }
 .race-row > p { max-width: 48ch; margin: 0; color: oklch(0.36 0.014 28); }
-.race-facts { display: grid; gap: 0.55rem; margin: 0; }
-.race-facts div { display: grid; grid-template-columns: 4rem 1fr; gap: 0.75rem; }
-.race-facts dt { color: oklch(0.43 0.02 28); font-size: 0.69rem; font-weight: 700; text-transform: uppercase; }
+.race-facts { display: grid; gap: 0.7rem; margin: 0; align-content: center; }
+.race-facts div { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0.75rem; align-items: baseline; }
+.race-facts dt { color: oklch(0.43 0.02 28); font-size: 0.69rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .race-facts dd { margin: 0; font-size: 0.82rem; font-weight: 600; }
+.race-facts__entry { grid-template-columns: 1fr; gap: 0.2rem; }
+.race-facts__entry dt { font-size: 0.72rem; }
+.race-facts__entry dd {
+  font-family: var(--font-display), Impact, sans-serif;
+  font-size: clamp(2.75rem, 5.5vw, 5.5rem);
+  font-weight: 700;
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
 .race-link { min-width: 5rem; font-size: 0.82rem; font-weight: 700; }
 .race-link span { display: inline-block; margin-left: 0.25rem; transition: transform 220ms var(--ease-out); }
 .race-link:hover span { transform: translate(0.2rem, -0.2rem); }
