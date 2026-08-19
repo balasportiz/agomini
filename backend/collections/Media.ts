@@ -413,7 +413,7 @@ export const Media: CollectionConfig = {
       required: true,
       index: true,
       admin: {
-        description: "The photo also needs to be Live before visitors can see it.",
+        description: "Show on this edition's gallery page. The photo also needs to be Live before visitors can see it.",
       },
     },
     {
@@ -422,9 +422,9 @@ export const Media: CollectionConfig = {
       defaultValue: false,
       required: true,
       index: true,
-      admin: { description: "Controls whether visitors can see this photo publicly." },
+      admin: { description: "Master switch — when off, the photo is hidden everywhere on the public site." },
     },
-    { name: "featured", type: "checkbox", defaultValue: false, required: true, index: true },
+    { name: "featured", type: "checkbox", defaultValue: false, required: true, index: true, admin: { description: "Show in the homepage gallery preview. The photo also needs to be Live." } },
     {
       name: "uploadedBy",
       type: "relationship",

@@ -364,8 +364,8 @@ export function GalleriesManager({
 
               {hiddenSelectedCount > 0 && (
                 <div className="studio-publish-note" role="status">
-                  <strong>{hiddenSelectedCount} photo{hiddenSelectedCount === 1 ? " is" : "s are"} hidden from both public galleries</strong>
-                  <span>Change <b>Hidden</b> to <b>Live</b> when each photo is ready. Accessibility descriptions and visible captions are optional.</span>
+                  <strong>{hiddenSelectedCount} photo{hiddenSelectedCount === 1 ? " is" : "s are"} hidden from the homepage and gallery</strong>
+                  <span>Change <b>Hidden</b> to <b>Live</b> first — then <b>Featured</b> puts a photo on the homepage preview and <b>In gallery</b> puts it on this edition&rsquo;s gallery page.</span>
                 </div>
               )}
 
@@ -430,9 +430,9 @@ function EditionPhotoCard({ photo, onSave, onDelete }: { photo: StudioGalleryPho
           <Input value={caption} placeholder="Text displayed with the photograph" onChange={(event) => setCaption(event.target.value)} />
         </div>
         <div className="studio-photo-switches">
-          <label><Switch checked={photo.active} onCheckedChange={(active) => onSave({ active, altText, caption })} /><span>{photo.active ? "Live" : "Hidden"}</span></label>
-          <label><Switch checked={photo.featured} onCheckedChange={(featured) => onSave({ featured, altText, caption })} /><span>Featured</span></label>
-          <label><Switch checked={photo.showInGallery} onCheckedChange={(showInGallery) => onSave({ showInGallery, altText, caption })} /><span>In gallery</span></label>
+          <label title="Master switch — turn off to hide this photo everywhere on the public site"><Switch checked={photo.active} onCheckedChange={(active) => onSave({ active, altText, caption })} /><span>{photo.active ? "Live" : "Hidden"}</span></label>
+          <label title="Show this photo in the homepage gallery preview"><Switch checked={photo.featured} onCheckedChange={(featured) => onSave({ featured, altText, caption })} /><span>Featured</span></label>
+          <label title="Show this photo on this edition's gallery page"><Switch checked={photo.showInGallery} onCheckedChange={(showInGallery) => onSave({ showInGallery, altText, caption })} /><span>In gallery</span></label>
         </div>
         <div className="studio-gallery__row-actions"><Button size="sm" variant="outline" disabled={!dirty} onClick={() => onSave({ altText, caption })}>Save text</Button><Button size="icon-sm" variant="ghost" aria-label="Delete photo" onClick={onDelete}><Trash2 /></Button></div>
       </div>

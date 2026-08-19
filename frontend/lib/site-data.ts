@@ -235,6 +235,7 @@ async function fetchPublicSiteDataFromApi() {
     logisticsRaw,
     editionsRaw,
     galleryPhotosRaw,
+    featuredPhotosRaw,
     highlightsRaw,
     faqsRaw,
     sponsorsRaw,
@@ -244,8 +245,13 @@ async function fetchPublicSiteDataFromApi() {
     payloadGet<PayloadListResponse>("/api/race-categories?where[active][equals]=true&sort=_order&limit=20"),
     payloadGet<PayloadListResponse>("/api/event-logistics?where[active][equals]=true&sort=_order&limit=20"),
     payloadGet<PayloadListResponse>("/api/event-editions?where[active][equals]=true&sort=-eventDate&limit=100"),
+    // "In gallery" photos — the public /gallery archive pages.
     payloadGet<PayloadListResponse>(
       "/api/media?where[active][equals]=true&where[assetType][equals]=event-gallery&where[showInGallery][equals]=true&sort=_order&limit=1000",
+    ),
+    // "Featured" photos — the homepage gallery preview.
+    payloadGet<PayloadListResponse>(
+      "/api/media?where[active][equals]=true&where[assetType][equals]=event-gallery&where[featured][equals]=true&sort=_order&limit=1000",
     ),
     payloadGet<PayloadListResponse>("/api/highlights?where[active][equals]=true&sort=_order&limit=30&depth=1"),
     payloadGet<PayloadListResponse>("/api/faqs?where[active][equals]=true&sort=_order&limit=40"),
@@ -256,15 +262,20 @@ async function fetchPublicSiteDataFromApi() {
   if (!settingsRaw || !navigationRaw) return null;
 
   // --- editions + gallery photos ---
-  const photosByEdition = new Map<string, PublicPhoto[]>();
-  for (const item of galleryPhotosRaw?.docs ?? []) {
-    const editionId = relationshipId(item.galleryEdition);
-    const photo = asPublicPhoto(item);
-    if (!editionId || !photo) continue;
-    const current = photosByEdition.get(editionId) ?? [];
-    current.push(photo);
-    photosByEdition.set(editionId, current);
-  }
+  const groupPhotosByEdition = (docs: Record<string, unknown>[] | undefined) => {
+    const byEdition = new Map<string, PublicPhoto[]>();
+    for (const item of docs ?? []) {
+      const editionId = relationshipId(item.galleryEdition);
+      const photo = asPublicPhoto(item);
+      if (!editionId || !photo) continue;
+      const current = byEdition.get(editionId) ?? [];
+      current.push(photo);
+      byEdition.set(editionId, current);
+    }
+    return byEdition;
+  };
+  const photosByEdition = groupPhotosByEdition(galleryPhotosRaw?.docs);
+  const featuredByEdition = groupPhotosByEdition(featuredPhotosRaw?.docs);
 
   const publicEditions: PublicEdition[] = (editionsRaw?.docs ?? [])
     .map((item) => {
@@ -285,16 +296,17 @@ async function fetchPublicSiteDataFromApi() {
 
   const featuredEditionId = relationshipId(settingsRaw.featuredGalleryEdition);
   const featuredEdition = publicEditions.find((e) => e.id === featuredEditionId);
-  const firstEditionWithPhotos = publicEditions.find((e) => e.photos.length > 0);
-  // The homepage block must always present the edition its photos came from,
-  // so the heading never contradicts the pictures (e.g. 1.0 photos under a
-  // 2.0 title). A featured edition with no photos yet still lends its name so
-  // the empty state matches the admin's choice.
+  const featuredCount = (edition: PublicEdition | undefined) =>
+    edition ? (featuredByEdition.get(edition.id) ?? []).length : 0;
+  const firstEditionWithFeatured = publicEditions.find((e) => featuredCount(e) > 0);
+  // The homepage preview shows the edition's Featured photos. The heading must
+  // always match the pictures, so an edition with no Featured photos yet lends
+  // only its name to the empty state.
   const homepageEdition =
-    (featuredEdition && featuredEdition.photos.length > 0 ? featuredEdition : firstEditionWithPhotos) ??
+    (featuredEdition && featuredCount(featuredEdition) > 0 ? featuredEdition : firstEditionWithFeatured) ??
     featuredEdition ??
     null;
-  const publicPhotos = homepageEdition?.photos ?? [];
+  const publicPhotos = homepageEdition ? (featuredByEdition.get(homepageEdition.id) ?? []) : [];
 
   // --- highlights ---
   const publicHighlights = (highlightsRaw?.docs ?? [])
