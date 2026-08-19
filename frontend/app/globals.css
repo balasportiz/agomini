@@ -180,16 +180,22 @@ p { text-wrap: pretty; }
 .race-facts div { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0.75rem; align-items: baseline; }
 .race-facts dt { color: oklch(0.43 0.02 28); font-size: 0.69rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .race-facts dd { margin: 0; font-size: 0.82rem; font-weight: 600; }
-.race-facts__entry { grid-template-columns: 1fr; gap: 0.2rem; }
-.race-facts__entry dt { font-size: 0.72rem; }
+.race-facts__entry {
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+.race-facts__entry dt,
 .race-facts__entry dd {
   font-family: var(--font-display), Impact, sans-serif;
   font-size: clamp(2.75rem, 5.5vw, 5.5rem);
   font-weight: 700;
   line-height: 0.88;
   letter-spacing: -0.03em;
+  text-transform: none;
   color: var(--ink);
 }
+.race-facts__entry dt { letter-spacing: -0.03em; }
 .race-link { min-width: 5rem; font-size: 0.82rem; font-weight: 700; }
 .race-link span { display: inline-block; margin-left: 0.25rem; transition: transform 220ms var(--ease-out); }
 .race-link:hover span { transform: translate(0.2rem, -0.2rem); }

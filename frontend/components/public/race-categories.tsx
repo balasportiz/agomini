@@ -18,7 +18,7 @@ export function RaceCategories({ categories, showRegistrationCta }: { categories
             </div>
             <p>{category.description}</p>
             <dl className="race-facts">
-              <div className="race-facts__entry"><dt>Entry</dt><dd>{category.fee}</dd></div>
+              <div className="race-facts__entry"><dt>Entry Fee</dt><dd>{category.fee}</dd></div>
               <div><dt>Report</dt><dd>{category.reportingTime}</dd></div>
               <div><dt>Flag-off</dt><dd>{category.startTime}</dd></div>
             </dl>
