@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ResultsPage() {
-  const { editions } = await loadPublicSiteData();
+  const { resultEditions } = await loadPublicSiteData();
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   return (
@@ -23,9 +23,9 @@ export default async function ResultsPage() {
         <span>Verified timing links are published here without replacing the history of earlier editions.</span>
       </header>
 
-      {editions.length > 0 ? (
+      {resultEditions.length > 0 ? (
         <div className="results-archive">
-          {editions.map((edition, index) => {
+          {resultEditions.map((edition, index) => {
             const destination = edition.resultsPublished
               ? safeExternalDestination(edition.resultsUrl, baseUrl, "/results")
               : null;

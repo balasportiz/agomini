@@ -1,5 +1,5 @@
 import type { CollectionConfig } from "payload";
-import { editorOrAbove, publicReadActive } from "@/lib/access";
+import { editorOrAbove, publicReadEdition } from "@/lib/access";
 import { adminPreview } from "@/lib/admin-preview";
 import { notifyOnChangeHooks } from "@/lib/realtime";
 
@@ -23,14 +23,14 @@ export const EventEditions: CollectionConfig = {
   admin: {
     group: "Archives",
     useAsTitle: "name",
-    defaultColumns: ["name", "editionLabel", "eventDate", "resultsPublished", "active"],
-    description: "One reusable archive record per Agomoni Run edition. Gallery photos and official results both connect to this record.",
+    defaultColumns: ["name", "editionLabel", "eventDate", "resultsPublished", "showInResults", "active"],
+    description: "One reusable archive record per Agomoni Run edition. Gallery visibility and results-page visibility are independent.",
     ...adminPreview("/results"),
   },
   access: {
     create: editorOrAbove,
     delete: editorOrAbove,
-    read: publicReadActive,
+    read: publicReadEdition,
     update: editorOrAbove,
   },
   defaultSort: "-eventDate",
@@ -102,15 +102,24 @@ export const EventEditions: CollectionConfig = {
           admin: { width: "50%", description: "Only enable after adding and checking the official results link." },
         },
         {
-          name: "active",
-          label: "Show this edition publicly",
+          name: "showInResults",
+          label: "Show on results page",
           type: "checkbox",
           defaultValue: false,
           required: true,
           index: true,
-          admin: { width: "50%", description: "Hidden editions remain editable in Studio." },
+          admin: { width: "50%", description: "Controls the public /results archive only. Gallery visibility is a separate switch." },
         },
       ],
+    },
+    {
+      name: "active",
+      label: "Show in gallery",
+      type: "checkbox",
+      defaultValue: false,
+      required: true,
+      index: true,
+      admin: { description: "Controls the public gallery only. Does not hide or show this edition on the results page." },
     },
   ],
 };

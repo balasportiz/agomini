@@ -10,6 +10,14 @@ export const publicReadActive: Access = ({ req: { user } }) => {
   return { active: { equals: true } };
 };
 
+/** Editions can be public on the gallery, the results archive, or both. */
+export const publicReadEdition: Access = ({ req: { user } }) => {
+  if (user) return true;
+  return {
+    or: [{ active: { equals: true } }, { showInResults: { equals: true } }],
+  };
+};
+
 export const publicGlobalRead: NonNullable<GlobalConfig["access"]>["read"] = () => true;
 export const authenticatedGlobal: NonNullable<GlobalConfig["access"]>["update"] = ({ req }) =>
   Boolean(req.user);

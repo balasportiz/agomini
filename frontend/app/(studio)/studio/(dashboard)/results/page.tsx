@@ -14,7 +14,7 @@ const fields: StudioFieldDef[] = [
   { name: "eventDate", label: "Event date", type: "date", help: "Used to order the newest and previous editions." },
   { name: "resultsUrl", label: "Official results link", type: "url", placeholder: "https://timing-provider.example/results", help: "Leave empty until the verified timing page is ready." },
   { name: "resultsPublished", label: "Results are available", type: "toggle", help: "Visitors only see the results button when this is enabled and a link is present." },
-  { name: "active", label: "Show this edition publicly", type: "toggle", help: "Hidden editions remain editable here but do not appear on the website." },
+  { name: "showInResults", label: "Show on the results page", type: "toggle", help: "This switch only affects /results. Gallery visibility is set in Galleries." },
 ];
 
 export default async function StudioResultsPage() {
@@ -27,13 +27,14 @@ export default async function StudioResultsPage() {
       collection="event-editions"
       singular="Edition"
       plural="Results archive"
-      description="Create each race edition once, publish its verified results link, or keep results marked as pending. These same editions are used by the Gallery workspace."
+      description="Create each race edition once, then publish its verified results link. The Live switch on this page only shows or hides the edition on /results — gallery visibility stays in Galleries."
       titleField="name"
       subtitleField="resultsUrl"
       fields={fields}
-      defaults={{ name: "", editionLabel: "", slug: "", eventDate: "", resultsUrl: "", resultsPublished: false, active: false }}
+      defaults={{ name: "", editionLabel: "", slug: "", eventDate: "", resultsUrl: "", resultsPublished: false, showInResults: false }}
       initialRows={editions}
       mediaOptions={[]}
+      visibilityField="showInResults"
     />
   );
 }

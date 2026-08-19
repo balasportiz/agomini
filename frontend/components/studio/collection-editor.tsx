@@ -73,6 +73,7 @@ export function CollectionEditor({
   initialRows,
   mediaOptions,
   orderable = false,
+  visibilityField = "active",
 }: {
   collection: string;
   singular: string;
@@ -85,6 +86,8 @@ export function CollectionEditor({
   initialRows: Row[];
   mediaOptions: StudioMediaOption[];
   orderable?: boolean;
+  /** List Live/Hidden switch. Defaults to `active`; Results uses `showInResults`. */
+  visibilityField?: string;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>(initialRows);
@@ -159,10 +162,10 @@ export function CollectionEditor({
 
   async function toggleActive(row: Row) {
     const id = str(row.id);
-    const next = !(row.active !== false);
+    const next = !(row[visibilityField] !== false);
     try {
-      await updateDoc(collection, id, { active: next });
-      setRows((prev) => prev.map((r) => (str(r.id) === id ? { ...r, active: next } : r)));
+      await updateDoc(collection, id, { [visibilityField]: next });
+      setRows((prev) => prev.map((r) => (str(r.id) === id ? { ...r, [visibilityField]: next } : r)));
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update visibility.");
@@ -235,7 +238,7 @@ export function CollectionEditor({
         ) : (
           <div className="studio-list">
             {rows.map((row, index) => {
-              const active = row.active !== false;
+              const live = row[visibilityField] !== false;
               const subtitle = subtitleField ? str(row[subtitleField]) : "";
               return (
                 <div className="studio-list__row" key={str(row.id)}>
@@ -243,9 +246,9 @@ export function CollectionEditor({
                     <strong>{str(row[titleField]) || "(untitled)"}</strong>
                     {subtitle && <span>{subtitle}</span>}
                   </div>
-                  <label className="studio-inline-actions" style={{ alignItems: "center", cursor: "pointer" }} title="Show on website">
-                    <Switch checked={active} onCheckedChange={() => toggleActive(row)} aria-label="Show on website" />
-                    <span className={`studio-badge ${active ? "studio-badge--on" : "studio-badge--off"}`}>{active ? "Live" : "Hidden"}</span>
+                  <label className="studio-inline-actions" style={{ alignItems: "center", cursor: "pointer" }} title={visibilityField === "showInResults" ? "Show on the results page" : "Show on website"}>
+                    <Switch checked={live} onCheckedChange={() => toggleActive(row)} aria-label={visibilityField === "showInResults" ? "Show on results page" : "Show on website"} />
+                    <span className={`studio-badge ${live ? "studio-badge--on" : "studio-badge--off"}`}>{live ? "Live" : "Hidden"}</span>
                   </label>
                   <div className="studio-list__row-actions">
                     {orderable && (

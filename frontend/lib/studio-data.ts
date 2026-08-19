@@ -186,6 +186,7 @@ export type StudioEdition = {
   galleryDescription: string;
   resultsUrl: string;
   resultsPublished: boolean;
+  showInResults: boolean;
   active: boolean;
 };
 
@@ -214,6 +215,7 @@ export async function loadEventEditions(): Promise<StudioEdition[]> {
     galleryDescription: typeof doc.galleryDescription === "string" ? doc.galleryDescription : "",
     resultsUrl: typeof doc.resultsUrl === "string" ? doc.resultsUrl : "",
     resultsPublished: doc.resultsPublished === true,
+    showInResults: doc.showInResults === true,
     active: doc.active !== false,
   }));
 }

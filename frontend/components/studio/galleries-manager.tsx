@@ -125,8 +125,8 @@ export function GalleriesManager({
     };
     try {
       if (editionDialog === "new") {
-        const { id } = await createDoc("event-editions", { ...data, resultsPublished: false });
-        const next: StudioEdition = { ...data, id, eventDate: data.eventDate ?? "", resultsUrl: "", resultsPublished: false };
+        const { id } = await createDoc("event-editions", { ...data, resultsPublished: false, showInResults: false });
+        const next: StudioEdition = { ...data, id, eventDate: data.eventDate ?? "", resultsUrl: "", resultsPublished: false, showInResults: false };
         setEditions((current) => [next, ...current]);
         setSelectedId(id);
         toast.success("Edition created. Add its photographs below.");
@@ -394,7 +394,7 @@ export function GalleriesManager({
             </div>
             <div className="studio-field-row"><Label>Event date</Label><Input type="date" value={editionDraft.eventDate ? editionDraft.eventDate.slice(0, 10) : ""} onChange={(event) => setEditionDraft((current) => ({ ...current, eventDate: event.target.value }))} /></div>
             <div className="studio-field-row"><Label>Gallery introduction</Label><Textarea rows={4} value={editionDraft.galleryDescription} placeholder="A short, factual introduction to this edition…" onChange={(event) => setEditionDraft((current) => ({ ...current, galleryDescription: event.target.value }))} /></div>
-            <label className="studio-toggle-line"><Switch checked={editionDraft.active} onCheckedChange={(active) => setEditionDraft((current) => ({ ...current, active }))} /><span><strong>Show this edition publicly</strong><small>Hidden editions and their photos remain editable in Studio.</small></span></label>
+            <label className="studio-toggle-line"><Switch checked={editionDraft.active} onCheckedChange={(active) => setEditionDraft((current) => ({ ...current, active }))} /><span><strong>Show this edition in the gallery</strong><small>This does not change the results page. Use Results archive to show or hide an edition there.</small></span></label>
           </div>
           <DialogFooter><Button variant="ghost" onClick={() => setEditionDialog(null)} disabled={savingEdition}>Cancel</Button><Button onClick={saveEdition} disabled={savingEdition}>{savingEdition ? "Saving…" : "Save edition"}</Button></DialogFooter>
         </DialogContent>

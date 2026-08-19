@@ -39,6 +39,7 @@ export type PublicEdition = {
   galleryDescription?: string | null;
   resultsUrl?: string | null;
   resultsPublished: boolean;
+  showInResults: boolean;
   photos: PublicPhoto[];
 };
 
@@ -246,7 +247,7 @@ async function fetchPublicSiteDataFromApi() {
     payloadGet<PayloadGlobalResponse>("/api/globals/navigation?depth=0"),
     payloadGet<PayloadListResponse>("/api/race-categories?where[active][equals]=true&sort=_order&limit=20"),
     payloadGet<PayloadListResponse>("/api/event-logistics?where[active][equals]=true&sort=_order&limit=20"),
-    payloadGet<PayloadListResponse>("/api/event-editions?where[active][equals]=true&sort=-eventDate&limit=100"),
+    payloadGet<PayloadListResponse>("/api/event-editions?sort=-eventDate&limit=100"),
     // "In gallery" photos — the public /gallery archive pages.
     payloadGet<PayloadListResponse>(
       "/api/media?where[active][equals]=true&where[assetType][equals]=event-gallery&where[showInGallery][equals]=true&sort=_order&limit=1000",
@@ -280,7 +281,7 @@ async function fetchPublicSiteDataFromApi() {
   const photosByEdition = groupPhotosByEdition(galleryPhotosRaw?.docs);
   const featuredByEdition = groupPhotosByEdition(featuredPhotosRaw?.docs);
 
-  const publicEditions: PublicEdition[] = (editionsRaw?.docs ?? [])
+  const mappedEditions = (editionsRaw?.docs ?? [])
     .map((item) => {
       const id = String(item.id ?? "");
       return {
@@ -292,10 +293,19 @@ async function fetchPublicSiteDataFromApi() {
         galleryDescription: typeof item.galleryDescription === "string" ? item.galleryDescription : null,
         resultsUrl: typeof item.resultsUrl === "string" ? item.resultsUrl : null,
         resultsPublished: item.resultsPublished === true,
+        showInResults: item.showInResults === true,
+        galleryVisible: item.active !== false,
         photos: photosByEdition.get(id) ?? [],
       };
     })
     .filter((e) => e.id && e.name && e.slug);
+
+  const publicEditions: PublicEdition[] = mappedEditions
+    .filter((edition) => edition.galleryVisible)
+    .map(({ galleryVisible: _galleryVisible, ...edition }) => edition);
+  const resultEditions: PublicEdition[] = mappedEditions
+    .filter((edition) => edition.showInResults)
+    .map(({ galleryVisible: _galleryVisible, ...edition }) => edition);
 
   const featuredEditionId = relationshipId(settingsData.featuredGalleryEdition);
   const featuredEdition = publicEditions.find((e) => e.id === featuredEditionId);
@@ -416,6 +426,7 @@ async function fetchPublicSiteDataFromApi() {
     categories: publicCategories,
     logistics: publicLogistics,
     editions: publicEditions,
+    resultEditions,
     photos: publicPhotos,
     homepageEdition,
     databaseAvailable: true,
@@ -439,6 +450,7 @@ export const loadPublicSiteData = cache(async () => {
     categories: defaultCategories,
     logistics: [] as PublicEventLogistic[],
     editions: [] as PublicEdition[],
+    resultEditions: [] as PublicEdition[],
     photos: [] as PublicPhoto[],
     homepageEdition: null as PublicEdition | null,
     databaseAvailable: false,

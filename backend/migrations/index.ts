@@ -6,6 +6,7 @@ import * as migration_20260720_164900_user_roles_enum from './20260720_164900_us
 import * as migration_20260720_164937_admin_overhaul from './20260720_164937_admin_overhaul';
 import * as migration_20260721_105955_edition_archives from './20260721_105955_edition_archives';
 import * as migration_20260819_180000_logistics_heading from './20260819_180000_logistics_heading';
+import * as migration_20260819_191500_results_visibility from './20260819_191500_results_visibility';
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20260819_180000_logistics_heading.up,
     down: migration_20260819_180000_logistics_heading.down,
     name: '20260819_180000_logistics_heading',
+  },
+  {
+    up: migration_20260819_191500_results_visibility.up,
+    down: migration_20260819_191500_results_visibility.down,
+    name: '20260819_191500_results_visibility',
   },
 ];
